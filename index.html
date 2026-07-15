@@ -15,14 +15,14 @@
     <div class="app-shell">
       <header class="topbar">
         <div class="brand-lockup">
-          <img class="brand-logo" src="assets/ai-x-lab-logo.png" alt="Ai x Lab" />
+          <img class="brand-logo" src="assets/rand-logo.png" alt="RAND Web-Design" />
         </div>
 
         <nav class="screen-tabs" aria-label="页面选择">
-          <button class="tab is-active" data-screen="hero">首页</button>
-          <button class="tab" data-screen="about">关于我</button>
-          <button class="tab" data-screen="works">作品</button>
-          <button class="tab" data-screen="contact">联系我</button>
+          <button class="tab is-active" data-screen="hero"><span class="tab-copy"><span class="tab-cn">首页</span><small>Home</small></span></button>
+          <button class="tab" data-screen="about"><span class="tab-copy"><span class="tab-cn">关于我</span><small>About</small></span></button>
+          <button class="tab" data-screen="works"><span class="tab-copy"><span class="tab-cn">作品</span><small>Works</small></span></button>
+          <button class="tab" data-screen="contact"><span class="tab-copy"><span class="tab-cn">联系我</span><small>Contact</small></span></button>
         </nav>
 
         <div class="top-actions">
@@ -69,8 +69,15 @@
         <section class="stage-wrap">
           <div class="stage-toolbar">
             <div class="mode-switch">
-              <button class="pill is-active" data-preview-mode="editor">编辑器模式</button>
-              <button class="pill" data-preview-mode="preview">发布预览模式</button>
+              <button class="mode-toggle" id="modeToggle" type="button" aria-pressed="false" aria-label="切换到预览模式">
+                <span class="mode-toggle-label">
+                  <span class="mode-toggle-cn">编辑</span>
+                  <span class="mode-toggle-en">Edit</span>
+                </span>
+                <span class="mode-toggle-arrow" aria-hidden="true">
+                  <img src="assets/short-arrow.svg" alt="" />
+                </span>
+              </button>
             </div>
             <div class="playback">
               <button class="round-button" id="playBtn" title="播放">▶</button>

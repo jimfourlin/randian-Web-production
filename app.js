@@ -149,8 +149,8 @@ const CONTACT_LAYOUTS = [
 ];
 
 const BG_MAP = {
-  black: "#070808",
-  ivory: "#efe9dd"
+  black: "#080b07",
+  ivory: "#f2f6ed"
 };
 
 function normalizeHeroBackground(value) {
@@ -169,10 +169,10 @@ const STYLE_DEFAULTS = {
   fontSize: "16",
   lineHeight: "1.55",
   letterSpacing: "0",
-  textColor: "#f0ede4",
+  textColor: "#f2f6ed",
   align: "left",
-  background: "#101111",
-  themeColor: "#c8a46a",
+  background: "#080b07",
+  themeColor: "#b7ff00",
   spacing: "42",
   contentWidth: "1080",
   radius: "8",
@@ -289,9 +289,9 @@ function makeStyleState() {
       styles[target][device] = { ...STYLE_DEFAULTS };
     });
   });
-  styles.about.desktop.background = "#121312";
-  styles.works.desktop.background = "#0f1010";
-  styles.contact.desktop.background = "#11110f";
+  styles.about.desktop.background = "#080b07";
+  styles.works.desktop.background = "#101510";
+  styles.contact.desktop.background = "#060806";
   return styles;
 }
 
@@ -350,10 +350,19 @@ function fitCanvasFrame() {
   const maxDesignWidth = ratioKey === "9-16" ? 420 : ratioKey === "4-5" ? 520 : 980;
   const width = Math.max(260, Math.min(outerWidth, maxDesignWidth, outerHeight * ratio));
   frame.style.width = `${width}px`;
+
+  const baseHeight = width / ratio;
+  const scale = Math.min(outerWidth / width, outerHeight / baseHeight);
+  frame.style.setProperty("--canvas-scale", `${Math.max(1, Math.min(scale, 2))}`);
+
+  const preview = $("#sitePreview");
+  if (preview) {
+    preview.style.setProperty("--preview-height", `${Math.max(preview.clientHeight, 1)}px`);
+  }
 }
 
 function editorCanvasRatioKey() {
-  return state.screen === "contact" ? "16-9" : state.hero.ratio;
+  return state.hero.ratio || "16-9";
 }
 
 function renderChrome() {
@@ -361,7 +370,15 @@ function renderChrome() {
   $$(".tab").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.screen === state.screen));
   $$(".library-panel").forEach((panel) => panel.classList.toggle("is-hidden", panel.dataset.library !== state.screen));
   $$(".config-screen").forEach((panel) => panel.classList.toggle("is-hidden", panel.dataset.config !== state.screen));
-  $$(".pill").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.previewMode === state.mode));
+  const modeToggle = $("#modeToggle");
+  if (modeToggle) {
+    const isPreview = state.mode === "preview";
+    modeToggle.classList.toggle("is-preview", isPreview);
+    modeToggle.setAttribute("aria-pressed", String(isPreview));
+    modeToggle.setAttribute("aria-label", isPreview ? "切换到编辑模式" : "切换到预览模式");
+    $(".mode-toggle-cn", modeToggle).textContent = isPreview ? "预览" : "编辑";
+    $(".mode-toggle-en", modeToggle).textContent = isPreview ? "Preview" : "Edit";
+  }
   $("#configTitle").textContent = `${screenName(state.screen)}设置`;
   $("#canvasFrame").className = `canvas-frame ratio-${editorCanvasRatioKey()} device-${state.device}`;
   $("#screenLabel").textContent = `${screenName(state.screen)} / ${currentScreenVariant()}`;
@@ -489,6 +506,32 @@ function renderTemplateCards(selector, items, activeId, onSelect) {
 }
 
 function bindTopbar() {
+  const playback = $(".playback");
+  if (playback) {
+    let hideTimer = 0;
+    const clearHideTimer = () => window.clearTimeout(hideTimer);
+    const schedulePlaybackHide = () => {
+      clearHideTimer();
+      hideTimer = window.setTimeout(() => playback.classList.remove("is-open"), 1000);
+    };
+    const openPlayback = () => {
+      playback.classList.add("is-open");
+      schedulePlaybackHide();
+    };
+
+    window.addEventListener("pointermove", (event) => {
+      const nearBottom = event.clientY >= window.innerHeight - 56;
+      const nearCenter = Math.abs(event.clientX - window.innerWidth / 2) <= 150;
+      if (nearBottom && nearCenter) openPlayback();
+    }, { passive: true });
+    playback.addEventListener("pointerenter", openPlayback);
+    playback.addEventListener("pointermove", openPlayback, { passive: true });
+    playback.addEventListener("pointerleave", schedulePlaybackHide);
+    playback.addEventListener("click", openPlayback);
+    playback.addEventListener("focusin", openPlayback);
+    playback.addEventListener("focusout", schedulePlaybackHide);
+  }
+
   $$(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
       clearProjectRouteHash();
@@ -496,12 +539,10 @@ function bindTopbar() {
       renderAll();
     });
   });
-  $$(".pill").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      clearProjectRouteHash();
-      state.mode = btn.dataset.previewMode;
-      renderAll();
-    });
+  $("#modeToggle")?.addEventListener("click", () => {
+    clearProjectRouteHash();
+    state.mode = state.mode === "preview" ? "editor" : "preview";
+    renderAll();
   });
   $("#playBtn").addEventListener("click", () => {
     state.animationPlaying = true;
@@ -4956,8 +4997,8 @@ function canvasToBlobAsync(canvas, type, quality) {
 function exportPalette() {
   const ivory = normalizeHeroBackground(state.hero.background) === "ivory";
   return ivory
-    ? { bg: "#f2eadf", grid: "rgba(24,24,20,0.07)", glow: "rgba(196,158,102,0.16)", text: "#151613", muted: "rgba(21,22,19,0.62)", card: "#f7f0e6", card2: "#e5dccd", line: "rgba(35,32,26,0.16)", accent: "#9c7340", shadow: "rgba(52,44,33,0.18)" }
-    : { bg: "#070808", grid: "rgba(255,255,255,0.035)", glow: "rgba(200,164,106,0.08)", text: "#f0ede4", muted: "rgba(240,237,228,0.62)", card: "#202322", card2: "#090a0a", line: "rgba(255,255,255,0.14)", accent: "#c8a46a", shadow: "rgba(0,0,0,0.55)" };
+    ? { bg: "#f7f7f3", grid: "rgba(0,0,0,0.06)", glow: "rgba(0,0,0,0.04)", text: "#080808", muted: "rgba(8,8,8,0.58)", card: "#ffffff", card2: "#ecece6", line: "rgba(0,0,0,0.14)", accent: "#b7ff00", shadow: "rgba(0,0,0,0.14)" }
+    : { bg: "#0a0a0a", grid: "rgba(255,255,255,0.05)", glow: "rgba(255,255,255,0.04)", text: "#ffffff", muted: "rgba(255,255,255,0.62)", card: "#161616", card2: "#050505", line: "rgba(255,255,255,0.14)", accent: "#b7ff00", shadow: "rgba(0,0,0,0.5)" };
 }
 
 function exportAspectRatio() {
