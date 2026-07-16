@@ -435,6 +435,20 @@ textarea,
   padding: 0;
 }
 
+.playback .round-button {
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+
+.playback-icon {
+  display: block;
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  filter: invert(1);
+}
+
 .export-menu {
   position: relative;
   display: inline-flex;
@@ -9963,5 +9977,36 @@ label span {
 #templateLibrary .template-thumb {
   height: auto;
   aspect-ratio: 16 / 9;
+}
+
+/* Slot upload control: use the supplied image glyph with a centered accent add button. */
+.slot-thumb .slot-upload-placeholder {
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  transform: translate(-50%, -50%);
+}
+
+.slot-thumb .slot-upload-placeholder::before {
+  right: -7px;
+  bottom: -5px;
+  padding: 0;
+  line-height: 1;
+}
+
+.slot-thumb .slot-upload-placeholder::after {
+  content: none;
+}
+
+.slot-thumb .slot-upload-icon {
+  display: block;
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 

@@ -316,9 +316,7 @@ function makeProject(id, number, title, category, desc, pinned = false) {
   };
 }
 
-function loadModeArrowAsset() {
-  const image = $(".mode-toggle-arrow img");
-  const source = image?.dataset.arrowSrc;
+function loadSvgAsset(image, source) {
   if (!image || !source) return;
 
   fetch(source, { cache: "no-store" })
@@ -332,12 +330,30 @@ function loadModeArrowAsset() {
       image.src = objectUrl;
     })
     .catch(() => {
-      image.closest(".mode-toggle-arrow")?.classList.add("is-icon-fallback");
+      image.parentElement?.classList.add("is-icon-fallback");
     });
+}
+
+function loadModeArrowAsset() {
+  const image = $(".mode-toggle-arrow img");
+  loadSvgAsset(image, image?.dataset.arrowSrc);
+}
+
+function loadPlaybackAssets() {
+  loadSvgAssets(".playback-icon");
+}
+
+function loadSvgAssets(selector) {
+  $$(selector).forEach((image) => loadSvgAsset(image, image.dataset.svgSrc));
+}
+
+function loadSlotUploadAssets() {
+  loadSvgAssets(".slot-upload-icon");
 }
 
 function init() {
   loadModeArrowAsset();
+  loadPlaybackAssets();
   renderLibraries();
   bindTopbar();
   bindPreviewScrollbar();
@@ -658,17 +674,24 @@ function bindTopbar() {
     const clearHideTimer = () => window.clearTimeout(hideTimer);
     const schedulePlaybackHide = () => {
       clearHideTimer();
-      hideTimer = window.setTimeout(() => playback.classList.remove("is-open"), 1000);
+      if (playback.matches(":hover") || playback.matches(":focus-within")) return;
+      hideTimer = window.setTimeout(() => {
+        if (playback.matches(":hover") || playback.matches(":focus-within")) return;
+        playback.classList.remove("is-open");
+      }, 1000);
     };
     const openPlayback = () => {
+      clearHideTimer();
       playback.classList.add("is-open");
-      schedulePlaybackHide();
     };
 
     window.addEventListener("pointermove", (event) => {
       const nearBottom = event.clientY >= window.innerHeight - 56;
       const nearCenter = Math.abs(event.clientX - window.innerWidth / 2) <= 150;
-      if (nearBottom && nearCenter) openPlayback();
+      if (nearBottom && nearCenter) {
+        openPlayback();
+        if (!playback.matches(":hover") && !playback.matches(":focus-within")) schedulePlaybackHide();
+      }
     }, { passive: true });
     playback.addEventListener("pointerenter", openPlayback);
     playback.addEventListener("pointermove", openPlayback, { passive: true });
@@ -993,7 +1016,7 @@ function renderSlots() {
     card.draggable = false;
     card.dataset.index = index;
     card.innerHTML = `
-      <div class="slot-thumb ${item ? "has-media" : "is-empty"}" data-action="thumb-upload" role="button" tabindex="0" title="上传或替换图片">${item ? `<img src="${item.thumb || item.src}" alt="${escapeHTML(item.name)}"${mediaCropClassAttr(item)}${mediaCropStyleAttr(item)} />` : `<span class="slot-empty-icon" aria-hidden="true"><span class="slot-empty-sun"></span><span class="slot-empty-mountain"></span></span><span class="slot-add-label">添加图片</span>`}</div>
+      <div class="slot-thumb ${item ? "has-media" : "is-empty"}" data-action="thumb-upload" role="button" tabindex="0" title="上传或替换图片">${item ? `<img src="${item.thumb || item.src}" alt="${escapeHTML(item.name)}"${mediaCropClassAttr(item)}${mediaCropStyleAttr(item)} />` : `<span class="slot-empty-icon slot-upload-placeholder" aria-hidden="true"><img class="slot-upload-icon" data-svg-src="assets/image-upload-icon.svg" alt="" /></span>`}</div>
       <div class="slot-meta">
         <strong>Slot ${String(index + 1).padStart(2, "0")}</strong>
         <span>${item ? "已上传" : "等待上传或拖拽图片"}</span>
@@ -1006,6 +1029,7 @@ function renderSlots() {
     wireSlotCard(card, index);
     root.appendChild(card);
   }
+  loadSlotUploadAssets();
 }
 
 function wireSlotCard(card, index) {
@@ -1070,9 +1094,11 @@ function startSlotPointerDrag(card, index, pointerId, startX, startY, clientX, c
   preview.querySelectorAll("button,[data-action],input,select").forEach((control) => {
     control.tabIndex = -1;
   });
+  preview.querySelectorAll("[data-svg-src]").forEach((image) => image.removeAttribute("src"));
   preview.style.width = `${bounds.width}px`;
   preview.style.height = `${bounds.height}px`;
   document.body.appendChild(preview);
+  loadSlotUploadAssets();
   activeSlotDrag = {
     card,
     index,
