@@ -195,6 +195,7 @@ let heroRenderMode = HERO_RENDER_MODES.EDITOR_PREVIEW;
 let currentHeroExportSnapshot = null;
 
 const state = makeDefaultState();
+let orbitCarouselCleanups = [];
 let circularGalleryCleanups = [];
 let verticalStackCleanups = [];
 let zoomParallaxCleanups = [];
@@ -211,6 +212,9 @@ let editingSoftwareSkillId = null;
 let draggedSoftwareSkillId = "";
 let activeSlotDrag = null;
 let customSelectSyncs = [];
+const svgAssetUrlCache = new Map();
+const svgAssetPromises = new Map();
+const SLOT_UPLOAD_ICON_SOURCE = "assets/image-upload-icon.svg";
 
 function makeDefaultState() {
   return {
@@ -316,18 +320,36 @@ function makeProject(id, number, title, category, desc, pinned = false) {
   };
 }
 
-function loadSvgAsset(image, source) {
-  if (!image || !source) return;
+function preloadSvgAsset(source) {
+  if (!source) return Promise.resolve("");
+  const cachedUrl = svgAssetUrlCache.get(source);
+  if (cachedUrl) return Promise.resolve(cachedUrl);
+  const pending = svgAssetPromises.get(source);
+  if (pending) return pending;
 
-  fetch(source, { cache: "no-store" })
+  const request = fetch(source, { cache: "no-store" })
     .then((response) => {
-      if (!response.ok) throw new Error(`Arrow asset request failed: ${response.status}`);
+      if (!response.ok) throw new Error(`SVG asset request failed: ${response.status}`);
       return response.text();
     })
     .then((svgText) => {
       const objectUrl = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml" }));
-      image.addEventListener("load", () => URL.revokeObjectURL(objectUrl), { once: true });
-      image.src = objectUrl;
+      svgAssetUrlCache.set(source, objectUrl);
+      return objectUrl;
+    })
+    .finally(() => {
+      svgAssetPromises.delete(source);
+    });
+  svgAssetPromises.set(source, request);
+  return request;
+}
+
+function loadSvgAsset(image, source) {
+  if (!image || !source) return;
+
+  preloadSvgAsset(source)
+    .then((objectUrl) => {
+      if (objectUrl) image.src = objectUrl;
     })
     .catch(() => {
       image.parentElement?.classList.add("is-icon-fallback");
@@ -347,11 +369,8 @@ function loadSvgAssets(selector) {
   $$(selector).forEach((image) => loadSvgAsset(image, image.dataset.svgSrc));
 }
 
-function loadSlotUploadAssets() {
-  loadSvgAssets(".slot-upload-icon");
-}
-
-function init() {
+async function init() {
+  await preloadSvgAsset(SLOT_UPLOAD_ICON_SOURCE).catch(() => "");
   loadModeArrowAsset();
   loadPlaybackAssets();
   renderLibraries();
@@ -1016,7 +1035,7 @@ function renderSlots() {
     card.draggable = false;
     card.dataset.index = index;
     card.innerHTML = `
-      <div class="slot-thumb ${item ? "has-media" : "is-empty"}" data-action="thumb-upload" role="button" tabindex="0" title="上传或替换图片">${item ? `<img src="${item.thumb || item.src}" alt="${escapeHTML(item.name)}"${mediaCropClassAttr(item)}${mediaCropStyleAttr(item)} />` : `<span class="slot-empty-icon slot-upload-placeholder" aria-hidden="true"><img class="slot-upload-icon" data-svg-src="assets/image-upload-icon.svg" alt="" /></span>`}</div>
+      <div class="slot-thumb ${item ? "has-media" : "is-empty"}" data-action="thumb-upload" role="button" tabindex="0" title="上传或替换图片">${item ? `<img src="${item.thumb || item.src}" alt="${escapeHTML(item.name)}"${mediaCropClassAttr(item)}${mediaCropStyleAttr(item)} />` : `<span class="slot-empty-icon slot-upload-placeholder" aria-hidden="true"><img class="slot-upload-icon" src="${svgAssetUrlCache.get(SLOT_UPLOAD_ICON_SOURCE) || SLOT_UPLOAD_ICON_SOURCE}" alt="" /></span>`}</div>
       <div class="slot-meta">
         <strong>Slot ${String(index + 1).padStart(2, "0")}</strong>
         <span>${item ? "已上传" : "等待上传或拖拽图片"}</span>
@@ -1029,7 +1048,6 @@ function renderSlots() {
     wireSlotCard(card, index);
     root.appendChild(card);
   }
-  loadSlotUploadAssets();
 }
 
 function wireSlotCard(card, index) {
@@ -1094,11 +1112,9 @@ function startSlotPointerDrag(card, index, pointerId, startX, startY, clientX, c
   preview.querySelectorAll("button,[data-action],input,select").forEach((control) => {
     control.tabIndex = -1;
   });
-  preview.querySelectorAll("[data-svg-src]").forEach((image) => image.removeAttribute("src"));
   preview.style.width = `${bounds.width}px`;
   preview.style.height = `${bounds.height}px`;
   document.body.appendChild(preview);
-  loadSlotUploadAssets();
   activeSlotDrag = {
     card,
     index,
@@ -1875,6 +1891,7 @@ function renderStyleControls() {
 function renderPreview() {
   heroRenderMode = HERO_RENDER_MODES.EDITOR_PREVIEW;
   currentHeroExportSnapshot = null;
+  cleanupOrbitCarousels();
   cleanupCircularGalleries();
   cleanupVerticalImageStacks();
   cleanupZoomParallax();
@@ -1915,6 +1932,7 @@ function renderPreview() {
     ? renderAllSections()
     : renderSection(state.screen);
   wirePreviewInteractions(root);
+  initOrbitCarousels(root, { autoPlay: state.animationPlaying });
   initVerticalImageStacks(root);
   initZoomParallax(root);
   initPhotoOrbits(root);
@@ -1930,6 +1948,84 @@ function renderPreview() {
     resetPreviewScroll(root, "hero");
   }
   updatePreviewScrollbar();
+}
+
+function cleanupOrbitCarousels() {
+  orbitCarouselCleanups.forEach((cleanup) => cleanup());
+  orbitCarouselCleanups = [];
+}
+
+function initOrbitCarousels(root, { autoPlay = true } = {}) {
+  $$(".orbit-flow", root).forEach((flow) => {
+    const cards = $$(".media-card", flow);
+    if (!cards.length) return;
+
+    const points = [
+      { p: 0, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, saturate: 0.78, z: 2 },
+      { p: 0.125, left: 72, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, saturate: 0.86, z: 4 },
+      { p: 0.25, left: 86, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, saturate: 0.95, z: 7 },
+      { p: 0.375, left: 72, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, saturate: 1, z: 10 },
+      { p: 0.5, left: 50, top: 82, scale: 1.16, opacity: 1, brightness: 1.05, saturate: 1.02, z: 12 },
+      { p: 0.625, left: 28, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, saturate: 1, z: 10 },
+      { p: 0.75, left: 14, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, saturate: 0.95, z: 7 },
+      { p: 0.875, left: 28, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, saturate: 0.86, z: 4 },
+      { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, saturate: 0.78, z: 2 }
+    ];
+    const duration = (parseFloat(getComputedStyle(flow).getPropertyValue("--anim-duration")) || 22) * 1000;
+    const sample = (progress) => {
+      const normalized = ((progress % 1) + 1) % 1;
+      let point = points[0];
+      let next = points[1];
+      for (let index = 0; index < points.length - 1; index += 1) {
+        if (normalized >= points[index].p && normalized <= points[index + 1].p) {
+          point = points[index];
+          next = points[index + 1];
+          break;
+        }
+      }
+      const local = (normalized - point.p) / Math.max(next.p - point.p, 0.0001);
+      const mix = (key) => point[key] + (next[key] - point[key]) * local;
+      return {
+        left: mix("left"),
+        top: mix("top"),
+        scale: mix("scale"),
+        opacity: mix("opacity"),
+        brightness: mix("brightness"),
+        saturate: mix("saturate"),
+        z: Math.round(mix("z"))
+      };
+    };
+
+    cards.forEach((card) => {
+      card.style.animation = "none";
+      card.style.left = "50%";
+      card.style.top = "50%";
+      card.style.willChange = "transform, opacity, filter";
+      card.style.backfaceVisibility = "hidden";
+    });
+
+    const start = performance.now();
+    let frame = 0;
+    const render = (now) => {
+      const progress = autoPlay ? (now - start) / duration : 0;
+      const width = flow.clientWidth || 1;
+      const height = flow.clientHeight || 1;
+      cards.forEach((card, index) => {
+        const stateAtPoint = sample(progress + index / cards.length);
+        const offsetX = (stateAtPoint.left - 50) * width / 100;
+        const offsetY = (stateAtPoint.top - 50) * height / 100;
+        card.style.transform = `translate3d(calc(-50% + ${offsetX.toFixed(3)}px), calc(-50% + ${offsetY.toFixed(3)}px), 0) rotate(18deg) scale(${stateAtPoint.scale.toFixed(4)})`;
+        card.style.opacity = stateAtPoint.opacity.toFixed(4);
+        card.style.filter = `brightness(${stateAtPoint.brightness.toFixed(4)}) saturate(${stateAtPoint.saturate.toFixed(4)})`;
+        card.style.zIndex = String(stateAtPoint.z);
+      });
+      frame = window.requestAnimationFrame(render);
+    };
+    frame = window.requestAnimationFrame(render);
+    orbitCarouselCleanups.push(() => {
+      window.cancelAnimationFrame(frame);
+    });
+  });
 }
 
 function initBlurTexts(root = document) {
@@ -5101,18 +5197,19 @@ function createCircularGallery(container, { autoPlay = true } = {}) {
     const width = container.clientWidth || 1;
     const height = container.clientHeight || 1;
     const half = width / 2;
-    const safeHalf = Math.max(120, half - itemWidth * 1.05);
-    const bend = Math.max(104, width * 0.24);
+    const edgeHalf = half + itemWidth * 0.42;
+    const horizontalScale = clamp(edgeHalf / Math.max(total / 2, 1), 0.54, 0.72);
+    const bend = Math.min(width * 0.24, Math.max(104, height * 0.64));
     const topBase = height * 0.58;
     const cardHeight = itemWidth * 1.32;
     const cardDiagonalHalf = Math.sqrt(itemWidth * itemWidth + cardHeight * cardHeight) * 0.5;
 
     items.forEach((item, index) => {
       const x = wrap(index * spacing - scroll.current);
-      const displayX = clamp(x * 0.72, -safeHalf, safeHalf);
-      const norm = Math.min(Math.abs(displayX) / Math.max(safeHalf, 1), 1);
+      const displayX = x * horizontalScale;
+      const norm = Math.min(Math.abs(displayX) / Math.max(edgeHalf, 1), 1);
       const scale = 1 - norm * 0.22;
-      const rotation = (displayX / Math.max(safeHalf, 1)) * 20;
+      const rotation = (displayX / Math.max(edgeHalf, 1)) * 20;
       const rawY = Math.pow(norm, 2.15) * bend - bend * 0.54;
       const safeY = clamp(
         rawY,
@@ -6465,17 +6562,22 @@ async function buildPublishedDocument(options = {}) {
           cards.forEach(function(card) {
             card.style.animation = "none";
             card.style.position = "absolute";
-            card.style.willChange = "left, top, transform, opacity, filter";
+            card.style.left = "50%";
+            card.style.top = "50%";
+            card.style.willChange = "transform, opacity, filter";
+            card.style.backfaceVisibility = "hidden";
           });
           var start = performance.now();
           function render(now) {
             var elapsed = autoPlay ? now - start : 0;
+            var flowWidth = flow.clientWidth || 1;
+            var flowHeight = flow.clientHeight || 1;
             cards.forEach(function(card, index) {
               var progress = ((elapsed / duration) + index / cards.length) % 1;
               var state = sample(progress);
-              card.style.left = state.left.toFixed(2) + "%";
-              card.style.top = state.top.toFixed(2) + "%";
-              card.style.transform = "translate(-50%, -50%) rotate(18deg) scale(" + state.scale.toFixed(3) + ")";
+              var offsetX = (state.left - 50) * flowWidth / 100;
+              var offsetY = (state.top - 50) * flowHeight / 100;
+              card.style.transform = "translate3d(calc(-50% + " + offsetX.toFixed(3) + "px), calc(-50% + " + offsetY.toFixed(3) + "px), 0) rotate(18deg) scale(" + state.scale.toFixed(4) + ")";
               card.style.opacity = state.opacity.toFixed(3);
               card.style.filter = "brightness(" + state.brightness.toFixed(3) + ") saturate(" + state.saturate.toFixed(3) + ")";
               card.style.zIndex = String(state.z);
@@ -6517,17 +6619,18 @@ async function buildPublishedDocument(options = {}) {
               var width = container.clientWidth || 1;
               var height = container.clientHeight || 1;
               var half = width / 2;
-              var safeHalf = Math.max(120, half - itemWidth * 1.05);
-              var bend = Math.max(104, width * 0.24);
+              var edgeHalf = half + itemWidth * 0.42;
+              var horizontalScale = Math.max(0.54, Math.min(0.72, edgeHalf / Math.max(total / 2, 1)));
+              var bend = Math.min(width * 0.24, Math.max(104, height * 0.64));
               var topBase = height * 0.58;
               var cardHeight = itemWidth * 1.32;
               var cardDiagonalHalf = Math.sqrt(itemWidth * itemWidth + cardHeight * cardHeight) * 0.5;
               items.forEach(function(item, index) {
                 var x = wrap(index * spacing - scroll.current);
-                var displayX = Math.max(-safeHalf, Math.min(safeHalf, x * 0.72));
-                var norm = Math.min(Math.abs(displayX) / Math.max(safeHalf, 1), 1);
+                var displayX = x * horizontalScale;
+                var norm = Math.min(Math.abs(displayX) / Math.max(edgeHalf, 1), 1);
                 var scale = 1 - norm * 0.22;
-                var rotation = (displayX / Math.max(safeHalf, 1)) * 20;
+                var rotation = (displayX / Math.max(edgeHalf, 1)) * 20;
                 var rawY = Math.pow(norm, 2.15) * bend - bend * 0.54;
                 var safeY = Math.max(
                   -topBase + cardDiagonalHalf * scale + 12,

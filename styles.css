@@ -1509,9 +1509,9 @@ textarea,
 
 .site-preview.is-full-preview .hero-preview.hero-totem .media-zone-totem {
   width: min(100%, 760px);
-  height: clamp(420px, calc(var(--preview-height, 640px) - 48px), 640px);
-  min-height: 420px;
-  max-height: calc(var(--preview-height, 640px) - 32px);
+  height: min(640px, max(0px, calc(var(--preview-height, 640px) - 32px)));
+  min-height: 0;
+  max-height: none;
   align-self: center;
   justify-self: center;
 }
@@ -1519,7 +1519,7 @@ textarea,
 .site-preview.is-full-preview .hero-preview.hero-totem .vertical-image-stack,
 .site-preview.is-full-preview .hero-preview.hero-totem .vertical-stack-stage {
   height: 100%;
-  min-height: 420px;
+  min-height: 0;
 }
 
 .site-preview:not(.is-full-preview):has(.about-preview),
@@ -2053,7 +2053,6 @@ body.is-slot-dragging .slot-card {
   background: rgba(17, 18, 16, 0.62);
 }
 
-.hero-bg-ivory .circular-gallery,
 .hero-bg-ivory .scroll-morph,
 .hero-bg-ivory .image-trail,
 .hero-bg-ivory .three-d-carousel,
@@ -2520,7 +2519,8 @@ body.is-slot-dragging .slot-card {
   transform-origin: center center;
   animation: orbitLoop var(--anim-duration, 22s) linear infinite;
   animation-delay: var(--delay, 0s);
-  will-change: left, top, transform, opacity, filter;
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
 }
 
 @keyframes orbitLoop {
@@ -4415,7 +4415,7 @@ body.is-slot-dragging .slot-card {
 .circular-gallery {
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
   cursor: grab;
   position: relative;
   touch-action: pan-y;
@@ -4533,6 +4533,10 @@ body.is-slot-dragging .slot-card {
   user-select: none;
   touch-action: pan-x;
   cursor: default;
+}
+
+.hero-preview.hero-totem .vertical-image-stack {
+  overflow: visible;
 }
 
 .vertical-image-stack.is-dragging {
@@ -4717,6 +4721,22 @@ body.is-slot-dragging .slot-card {
 .vertical-stack-counter span:last-child {
   color: rgba(240, 237, 228, 0.56);
   font-size: 13px;
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-stack-counter {
+  left: 33px;
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-stack-dots {
+  right: 52px;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-stack-counter {
+  left: 10px;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-stack-dots {
+  right: 29px;
 }
 
 .vertical-stack-hint {
@@ -8409,7 +8429,7 @@ html.image-export *,
 .published-site .media-zone-totem {
   width: min(100%, 760px);
   height: min(640px, 82vh);
-  min-height: 420px;
+  min-height: 0;
   align-self: center;
   justify-self: center;
 }
@@ -8417,7 +8437,7 @@ html.image-export *,
 .published-site .hero-preview.hero-totem .vertical-image-stack,
 .published-site .hero-preview.hero-totem .vertical-stack-stage {
   height: 100%;
-  min-height: 420px;
+  min-height: 0;
 }
 
 .published-nav {
