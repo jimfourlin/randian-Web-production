@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>四屏作品集模板编辑器</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=template-thumbs-16-9-20260716" />
     <style>
       .panel-section:has(#styleTarget) {
         display: none !important;
@@ -40,7 +40,7 @@
       </header>
 
       <main class="workspace">
-        <aside class="panel left-panel">
+        <aside class="panel left-panel" id="templateLibrary" aria-label="模板库">
           <section class="panel-section library-panel" data-library="hero">
             <p class="eyebrow">展示模板库</p>
             <h2>动态首屏</h2>
@@ -65,6 +65,7 @@
             <div class="template-list" id="contactLayoutList"></div>
           </section>
         </aside>
+        <button class="left-panel-trigger" id="leftPanelTrigger" type="button" aria-label="打开模板库" aria-controls="templateLibrary" aria-expanded="false"></button>
 
         <section class="stage-wrap">
           <div class="stage-toolbar">
@@ -75,7 +76,7 @@
                   <span class="mode-toggle-en">Edit</span>
                 </span>
                 <span class="mode-toggle-arrow" aria-hidden="true">
-                  <img src="assets/short-arrow.svg" alt="" />
+                  <img data-arrow-src="assets/short-arrow.svg" alt="" />
                 </span>
               </button>
             </div>
@@ -89,6 +90,11 @@
           <div class="canvas-outer">
             <div class="canvas-frame ratio-16-9 device-desktop" id="canvasFrame">
               <div class="site-preview" id="sitePreview"></div>
+              <div class="preview-scrollbar" id="previewScrollbar" aria-hidden="true">
+                <div class="preview-scrollbar-track">
+                  <button class="preview-scrollbar-thumb" id="previewScrollbarThumb" type="button" role="scrollbar" tabindex="0" aria-label="预览滚动位置" aria-controls="sitePreview" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -98,7 +104,7 @@
           </div>
         </section>
 
-        <aside class="panel right-panel">
+        <aside class="panel right-panel" id="configPanel" aria-label="配置面板">
           <section class="panel-section">
             <div class="section-head">
               <div>
@@ -177,6 +183,7 @@
             <div class="style-grid" id="styleControls"></div>
           </section>
         </aside>
+        <button class="right-panel-trigger" id="rightPanelTrigger" type="button" aria-label="打开配置面板" aria-controls="configPanel" aria-expanded="false"></button>
       </main>
     </div>
 
@@ -8311,6 +8318,6 @@ html.image-export *,
 </script>
 
     <script src="html2canvas.min.js"></script>
-    <script src="app.js?v=hero-export-modes-v3-20260713"></script>
+    <script src="app.js?v=hero-export-modes-v4-arrow-fix-20260716"></script>
   </body>
 </html>

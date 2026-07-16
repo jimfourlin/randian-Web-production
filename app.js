@@ -209,6 +209,8 @@ let cropState = null;
 let lastTotemNavigationTime = 0;
 let editingSoftwareSkillId = null;
 let draggedSoftwareSkillId = "";
+let activeSlotDrag = null;
+let customSelectSyncs = [];
 
 function makeDefaultState() {
   return {
@@ -314,14 +316,134 @@ function makeProject(id, number, title, category, desc, pinned = false) {
   };
 }
 
+function loadModeArrowAsset() {
+  const image = $(".mode-toggle-arrow img");
+  const source = image?.dataset.arrowSrc;
+  if (!image || !source) return;
+
+  fetch(source, { cache: "no-store" })
+    .then((response) => {
+      if (!response.ok) throw new Error(`Arrow asset request failed: ${response.status}`);
+      return response.text();
+    })
+    .then((svgText) => {
+      const objectUrl = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml" }));
+      image.addEventListener("load", () => URL.revokeObjectURL(objectUrl), { once: true });
+      image.src = objectUrl;
+    })
+    .catch(() => {
+      image.closest(".mode-toggle-arrow")?.classList.add("is-icon-fallback");
+    });
+}
+
 function init() {
+  loadModeArrowAsset();
   renderLibraries();
   bindTopbar();
+  bindPreviewScrollbar();
   bindHeroControls();
   bindStyleControls();
   window.addEventListener("resize", fitCanvasFrame);
   window.addEventListener("hashchange", renderPreview);
   renderAll();
+}
+
+let refreshPreviewScrollbar = () => {};
+
+function bindPreviewScrollbar() {
+  const root = $("#sitePreview");
+  const scrollbar = $("#previewScrollbar");
+  const track = $(".preview-scrollbar-track", scrollbar);
+  const thumb = $("#previewScrollbarThumb");
+  if (!root || !scrollbar || !track || !thumb) return;
+
+  let dragging = false;
+  let dragOffset = 0;
+  let updateFrame = 0;
+
+  const update = () => {
+    const maxScroll = Math.max(root.scrollHeight - root.clientHeight, 0);
+    const isVisible = root.classList.contains("is-full-preview") && maxScroll > 0;
+    const trackHeight = track.clientHeight;
+    const thumbHeight = Math.min(trackHeight, Math.max(18, Math.round(trackHeight * root.clientHeight / Math.max(root.scrollHeight, 1))));
+    const travel = Math.max(trackHeight - thumbHeight, 0);
+    const progress = maxScroll ? root.scrollTop / maxScroll : 0;
+    scrollbar.classList.toggle("is-visible", isVisible);
+    scrollbar.setAttribute("aria-hidden", String(!isVisible));
+    thumb.style.height = `${thumbHeight}px`;
+    thumb.style.transform = `translateY(${travel * progress}px)`;
+    thumb.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
+  };
+
+  const scheduleUpdate = () => {
+    if (updateFrame) return;
+    updateFrame = window.requestAnimationFrame(() => {
+      updateFrame = 0;
+      update();
+    });
+  };
+
+  const scrollToPointer = (clientY, behavior = "auto") => {
+    const rect = track.getBoundingClientRect();
+    const progress = Math.max(0, Math.min(1, (clientY - rect.top) / Math.max(rect.height, 1)));
+    root.scrollTo({ top: progress * Math.max(root.scrollHeight - root.clientHeight, 0), behavior });
+  };
+
+  root.addEventListener("scroll", scheduleUpdate, { passive: true });
+  window.addEventListener("resize", update);
+  track.addEventListener("pointerdown", (event) => {
+    if (event.target !== thumb) scrollToPointer(event.clientY, "smooth");
+  });
+  thumb.addEventListener("pointerdown", (event) => {
+    dragging = true;
+    const rect = thumb.getBoundingClientRect();
+    dragOffset = event.clientY - rect.top;
+    thumb.setPointerCapture(event.pointerId);
+    thumb.classList.add("is-dragging");
+    event.preventDefault();
+  });
+  thumb.addEventListener("pointermove", (event) => {
+    if (!dragging) return;
+    const rect = track.getBoundingClientRect();
+    const thumbRect = thumb.getBoundingClientRect();
+    const travel = Math.max(rect.height - thumbRect.height, 1);
+    const progress = Math.max(0, Math.min(1, (event.clientY - rect.top - dragOffset) / travel));
+    root.scrollTop = progress * Math.max(root.scrollHeight - root.clientHeight, 0);
+    update();
+  });
+  const stopDragging = () => {
+    dragging = false;
+    thumb.classList.remove("is-dragging");
+  };
+  thumb.addEventListener("pointerup", stopDragging);
+  thumb.addEventListener("pointercancel", stopDragging);
+  thumb.addEventListener("keydown", (event) => {
+    const step = Math.max(root.clientHeight * 0.72, 80);
+    if (event.key === "ArrowDown" || event.key === "PageDown") {
+      root.scrollBy({ top: step, behavior: "smooth" });
+    } else if (event.key === "ArrowUp" || event.key === "PageUp") {
+      root.scrollBy({ top: -step, behavior: "smooth" });
+    } else if (event.key === "Home") {
+      root.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (event.key === "End") {
+      root.scrollTo({ top: root.scrollHeight, behavior: "smooth" });
+    } else {
+      return;
+    }
+    event.preventDefault();
+  });
+  scrollbar.addEventListener("wheel", (event) => {
+    if (!scrollbar.classList.contains("is-visible")) return;
+    root.scrollBy({ top: event.deltaY, behavior: "auto" });
+    event.preventDefault();
+  }, { passive: false });
+
+  refreshPreviewScrollbar = update;
+  update();
+}
+
+function updatePreviewScrollbar() {
+  refreshPreviewScrollbar();
 }
 
 function renderAll() {
@@ -366,7 +488,15 @@ function editorCanvasRatioKey() {
 }
 
 function renderChrome() {
-  $(".workspace")?.setAttribute("data-active-screen", state.screen);
+  const workspace = $(".workspace");
+  const screenChanged = workspace?.dataset.activeScreen && workspace.dataset.activeScreen !== state.screen;
+  if (screenChanged) {
+    $(".left-panel")?.classList.remove("is-open");
+    $("#leftPanelTrigger")?.setAttribute("aria-expanded", "false");
+    $(".right-panel")?.classList.remove("is-open");
+    $("#rightPanelTrigger")?.setAttribute("aria-expanded", "false");
+  }
+  workspace?.setAttribute("data-active-screen", state.screen);
   $$(".tab").forEach((btn) => btn.classList.toggle("is-active", btn.dataset.screen === state.screen));
   $$(".library-panel").forEach((panel) => panel.classList.toggle("is-hidden", panel.dataset.library !== state.screen));
   $$(".config-screen").forEach((panel) => panel.classList.toggle("is-hidden", panel.dataset.config !== state.screen));
@@ -493,7 +623,7 @@ function renderTemplateCards(selector, items, activeId, onSelect) {
   if (!root) return;
   root.innerHTML = items.map((item) => `
     <button class="template-card ${item.id === activeId ? "is-active" : ""}" data-id="${item.id}">
-      <span class="template-thumb ${item.thumb || "thumb-mosaic"}"></span>
+      ${templateThumbHTML(item)}
       <span>
         <strong>${escapeHTML(item.name)}</strong>
         <span>${escapeHTML(item.desc)}</span>
@@ -503,6 +633,22 @@ function renderTemplateCards(selector, items, activeId, onSelect) {
   $$(".template-card", root).forEach((card) => {
     card.addEventListener("click", () => onSelect(card.dataset.id));
   });
+}
+
+function templateThumbHTML(item) {
+  if (item.id === "orbit") {
+    const cards = Array.from({ length: 10 }, (_, index) => (
+      `<span class="template-orbit-mini-card template-orbit-mini-card-${index + 1}" aria-hidden="true"></span>`
+    )).join("");
+    return `<span class="template-thumb thumb-orbit template-orbit-thumb" aria-hidden="true">${cards}</span>`;
+  }
+  if (item.id === "film") {
+    const cards = Array.from({ length: 8 }, (_, index) => (
+      `<span class="template-circular-mini-card template-circular-mini-card-${index + 1}" aria-hidden="true"></span>`
+    )).join("");
+    return `<span class="template-thumb thumb-orbit template-circular-thumb" aria-hidden="true">${cards}</span>`;
+  }
+  return `<span class="template-thumb ${item.thumb || "thumb-mosaic"}"></span>`;
 }
 
 function bindTopbar() {
@@ -530,6 +676,91 @@ function bindTopbar() {
     playback.addEventListener("click", openPlayback);
     playback.addEventListener("focusin", openPlayback);
     playback.addEventListener("focusout", schedulePlaybackHide);
+  }
+
+  const leftPanel = $(".left-panel");
+  const leftPanelTrigger = $("#leftPanelTrigger");
+  if (leftPanel && leftPanelTrigger) {
+    let leftPanelTimer = 0;
+    const clearLeftPanelTimer = () => window.clearTimeout(leftPanelTimer);
+    const setLeftPanelOpen = (open) => {
+      leftPanel.classList.toggle("is-open", open);
+      leftPanelTrigger.setAttribute("aria-expanded", String(open));
+    };
+    const openLeftPanel = () => {
+      clearLeftPanelTimer();
+      setLeftPanelOpen(true);
+    };
+    const scheduleLeftPanelHide = () => {
+      clearLeftPanelTimer();
+      leftPanelTimer = window.setTimeout(() => setLeftPanelOpen(false), 500);
+    };
+
+    window.addEventListener("pointermove", (event) => {
+      const triggerRect = leftPanelTrigger.getBoundingClientRect();
+      const nearLeftTrigger = event.clientX <= triggerRect.right + 18
+        && event.clientY >= triggerRect.top - 18
+        && event.clientY <= triggerRect.bottom + 18;
+      if (nearLeftTrigger) openLeftPanel();
+    }, { passive: true });
+    leftPanelTrigger.addEventListener("pointerenter", openLeftPanel);
+    leftPanelTrigger.addEventListener("click", openLeftPanel);
+    leftPanelTrigger.addEventListener("focusin", openLeftPanel);
+    leftPanel.addEventListener("pointerenter", openLeftPanel);
+    leftPanel.addEventListener("pointermove", openLeftPanel, { passive: true });
+    leftPanel.addEventListener("pointerleave", scheduleLeftPanelHide);
+    leftPanel.addEventListener("focusin", openLeftPanel);
+    leftPanel.addEventListener("focusout", scheduleLeftPanelHide);
+  }
+
+  const rightPanel = $(".right-panel");
+  const rightPanelTrigger = $("#rightPanelTrigger");
+  if (rightPanel && rightPanelTrigger) {
+    let rightPanelTimer = 0;
+    const clearRightPanelTimer = () => window.clearTimeout(rightPanelTimer);
+    const setRightPanelOpen = (open) => {
+      rightPanel.classList.toggle("is-open", open);
+      rightPanelTrigger.setAttribute("aria-expanded", String(open));
+    };
+    const openRightPanel = () => {
+      clearRightPanelTimer();
+      setRightPanelOpen(true);
+    };
+    const scheduleRightPanelHide = () => {
+      clearRightPanelTimer();
+      if (document.body.classList.contains("is-slot-dragging")) return;
+      rightPanelTimer = window.setTimeout(() => setRightPanelOpen(false), 500);
+    };
+
+    window.addEventListener("pointermove", (event) => {
+      const triggerRect = rightPanelTrigger.getBoundingClientRect();
+      const nearRightTrigger = event.clientX >= triggerRect.left - 18
+        && event.clientY >= triggerRect.top - 18
+        && event.clientY <= triggerRect.bottom + 18;
+      if (nearRightTrigger) openRightPanel();
+    }, { passive: true });
+    rightPanelTrigger.addEventListener("pointerenter", openRightPanel);
+    rightPanelTrigger.addEventListener("click", openRightPanel);
+    rightPanelTrigger.addEventListener("focusin", openRightPanel);
+    rightPanel.addEventListener("pointerenter", openRightPanel);
+    rightPanel.addEventListener("pointermove", openRightPanel, { passive: true });
+    rightPanel.addEventListener("pointerleave", scheduleRightPanelHide);
+    rightPanel.addEventListener("focusin", openRightPanel);
+    rightPanel.addEventListener("focusout", scheduleRightPanelHide);
+
+    document.addEventListener("dragstart", (event) => {
+      if (!event.target.closest(".slot-card")) return;
+      document.body.classList.add("is-slot-dragging");
+      openRightPanel();
+    }, true);
+    document.addEventListener("dragend", () => {
+      if (!document.body.classList.contains("is-slot-dragging")) return;
+      cancelActiveSlotDrag();
+      if (!rightPanel.matches(":hover")) scheduleRightPanelHide();
+    }, true);
+    document.addEventListener("slotdragend", () => {
+      if (!rightPanel.matches(":hover")) scheduleRightPanelHide();
+    });
   }
 
   $$(".tab").forEach((btn) => {
@@ -609,6 +840,127 @@ function bindHeroControls() {
     state.hero.background = normalizeHeroBackground(event.target.value);
     renderAll();
   });
+  setupHeroCustomSelects();
+}
+
+function setupHeroCustomSelects() {
+  customSelectSyncs = [];
+  ["ratioSelect", "speedSelect", "backgroundSelect"].forEach((id) => {
+    const select = $(`#${id}`);
+    if (!select || select.dataset.customSelectReady === "true") return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "custom-select";
+    select.parentElement.insertBefore(wrapper, select);
+    wrapper.appendChild(select);
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "custom-select-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-controls", `${id}Menu`);
+    wrapper.appendChild(trigger);
+
+    const menu = document.createElement("div");
+    menu.id = `${id}Menu`;
+    menu.className = "custom-select-menu";
+    menu.setAttribute("role", "listbox");
+    menu.tabIndex = -1;
+    wrapper.appendChild(menu);
+
+    const options = [...select.options].map((option) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "custom-select-option";
+      button.dataset.value = option.value;
+      button.setAttribute("role", "option");
+      button.textContent = option.textContent;
+      menu.appendChild(button);
+      return button;
+    });
+
+    let isOpen = false;
+    const selectedIndex = () => Math.max(options.findIndex((option) => option.dataset.value === select.value), 0);
+    const sync = () => {
+      const selected = select.options[select.selectedIndex];
+      trigger.textContent = selected?.textContent || "请选择";
+      options.forEach((option) => {
+        const selectedOption = option.dataset.value === select.value;
+        option.classList.toggle("is-selected", selectedOption);
+        option.setAttribute("aria-selected", String(selectedOption));
+      });
+    };
+    const focusOption = (index) => options[Math.max(0, Math.min(index, options.length - 1))]?.focus();
+    const close = (restoreFocus = false) => {
+      isOpen = false;
+      wrapper.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
+      if (restoreFocus) trigger.focus();
+    };
+    const open = (focusSelected = false) => {
+      isOpen = true;
+      wrapper.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      if (focusSelected) window.setTimeout(() => focusOption(selectedIndex()), 0);
+    };
+    const toggle = () => (isOpen ? close() : open(false));
+
+    trigger.addEventListener("click", toggle);
+    trigger.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggle();
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        open(true);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        open(false);
+        window.setTimeout(() => focusOption(selectedIndex() - 1), 0);
+      } else if (event.key === "Escape") {
+        close(true);
+      }
+    });
+    options.forEach((option, index) => {
+      option.addEventListener("click", () => {
+        select.value = option.dataset.value;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        close(true);
+      });
+      option.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          focusOption(index + 1);
+        } else if (event.key === "ArrowUp") {
+          event.preventDefault();
+          focusOption(index - 1);
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          close(true);
+        } else if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          option.click();
+        }
+      });
+    });
+    select.classList.add("native-select-source");
+    select.dataset.customSelectReady = "true";
+    select.addEventListener("change", sync);
+    sync();
+    customSelectSyncs.push(sync);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    $$(".custom-select.is-open").forEach((wrapper) => {
+      if (!wrapper.contains(event.target)) {
+        wrapper.classList.remove("is-open");
+        $(".custom-select-trigger", wrapper)?.setAttribute("aria-expanded", "false");
+      }
+    });
+  });
+}
+
+function syncHeroCustomSelects() {
+  customSelectSyncs.forEach((sync) => sync());
 }
 
 function bindStyleControls() {
@@ -620,6 +972,7 @@ function renderConfig() {
   $("#speedSelect").value = state.hero.speed;
   state.hero.background = normalizeHeroBackground(state.hero.background);
   $("#backgroundSelect").value = state.hero.background;
+  syncHeroCustomSelects();
   renderSlots();
   renderAboutFields();
   renderWorksConfig();
@@ -637,7 +990,7 @@ function renderSlots() {
     const item = state.hero.media[index];
     const card = document.createElement("div");
     card.className = "slot-card";
-    card.draggable = true;
+    card.draggable = false;
     card.dataset.index = index;
     card.innerHTML = `
       <div class="slot-thumb ${item ? "has-media" : "is-empty"}" data-action="thumb-upload" role="button" tabindex="0" title="上传或替换图片">${item ? `<img src="${item.thumb || item.src}" alt="${escapeHTML(item.name)}"${mediaCropClassAttr(item)}${mediaCropStyleAttr(item)} />` : `<span class="slot-empty-icon" aria-hidden="true"><span class="slot-empty-sun"></span><span class="slot-empty-mountain"></span></span><span class="slot-add-label">添加图片</span>`}</div>
@@ -656,25 +1009,35 @@ function renderSlots() {
 }
 
 function wireSlotCard(card, index) {
-  card.addEventListener("dragstart", (event) => {
-    event.dataTransfer.setData("text/plain", `slot:${index}`);
+  let pendingPointer = null;
+  const clearPendingPointer = () => {
+    pendingPointer = null;
+    window.removeEventListener("pointermove", handlePendingPointerMove);
+    window.removeEventListener("pointerup", clearPendingPointer);
+    window.removeEventListener("pointercancel", clearPendingPointer);
+  };
+  const handlePendingPointerMove = (event) => {
+    if (!pendingPointer || event.pointerId !== pendingPointer.pointerId) return;
+    const distance = Math.hypot(event.clientX - pendingPointer.startX, event.clientY - pendingPointer.startY);
+    if (distance < 6) return;
+    const { pointerId, startX, startY } = pendingPointer;
+    clearPendingPointer();
+    startSlotPointerDrag(card, index, pointerId, startX, startY, event.clientX, event.clientY);
+  };
+  card.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || event.target.closest("button,[data-action],input,select")) return;
+    pendingPointer = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY
+    };
+    window.addEventListener("pointermove", handlePendingPointerMove, { passive: false });
+    window.addEventListener("pointerup", clearPendingPointer, { once: true });
+    window.addEventListener("pointercancel", clearPendingPointer, { once: true });
   });
-  card.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    card.classList.add("is-dragover");
-  });
-  card.addEventListener("dragleave", () => card.classList.remove("is-dragover"));
+  card.addEventListener("dragover", (event) => event.preventDefault());
   card.addEventListener("drop", (event) => {
     event.preventDefault();
-    card.classList.remove("is-dragover");
-    const token = event.dataTransfer.getData("text/plain");
-    if (token.startsWith("slot:")) {
-      const from = Number(token.replace("slot:", ""));
-      const to = Number(card.dataset.index);
-      [state.hero.media[from], state.hero.media[to]] = [state.hero.media[to], state.hero.media[from]];
-      renderAll();
-      return;
-    }
     const file = event.dataTransfer.files[0];
     if (file) readImage(file, (media) => openCropModal(index, media));
   });
@@ -690,6 +1053,252 @@ function wireSlotCard(card, index) {
     state.hero.media[index] = null;
     renderAll();
   });
+}
+
+function startSlotPointerDrag(card, index, pointerId, startX, startY, clientX, clientY) {
+  if (activeSlotDrag) cancelActiveSlotDrag();
+  const list = card.parentElement;
+  const bounds = card.getBoundingClientRect();
+  const placeholder = document.createElement("div");
+  placeholder.className = "slot-card-drop-placeholder";
+  placeholder.style.height = `${bounds.height}px`;
+  placeholder.style.width = `${bounds.width}px`;
+  const preview = card.cloneNode(true);
+  preview.classList.add("slot-card-drag-preview");
+  preview.setAttribute("aria-hidden", "true");
+  preview.removeAttribute("id");
+  preview.querySelectorAll("button,[data-action],input,select").forEach((control) => {
+    control.tabIndex = -1;
+  });
+  preview.style.width = `${bounds.width}px`;
+  preview.style.height = `${bounds.height}px`;
+  document.body.appendChild(preview);
+  activeSlotDrag = {
+    card,
+    index,
+    list,
+    placeholder,
+    preview,
+    pointerId,
+    offsetX: clientX - bounds.left,
+    offsetY: clientY - bounds.top,
+    originalOrder: [...list.querySelectorAll(".slot-card")].map((slotCard) => Number(slotCard.dataset.index)),
+    shiftAnimations: new Map(),
+    dropPositionFrame: 0,
+    pendingClientX: clientX,
+    pendingClientY: clientY,
+    lastClientX: clientX,
+    lastClientY: clientY,
+    lastMoveTime: performance.now(),
+    pointerVelocity: 0
+  };
+  card.replaceWith(placeholder);
+  document.body.classList.add("is-slot-dragging");
+  moveSlotPointerDrag(clientX, clientY);
+  window.addEventListener("pointermove", handleSlotPointerMove, { passive: false });
+  window.addEventListener("pointerup", finishSlotPointerDrag, { once: true });
+  window.addEventListener("pointercancel", cancelSlotPointerDrag, { once: true });
+  window.addEventListener("keydown", handleSlotPointerKeydown);
+}
+
+function handleSlotPointerMove(event) {
+  if (!activeSlotDrag || event.pointerId !== activeSlotDrag.pointerId) return;
+  event.preventDefault();
+  moveSlotPointerDrag(event.clientX, event.clientY);
+}
+
+function moveSlotPointerDrag(clientX, clientY) {
+  if (!activeSlotDrag) return;
+  const { preview } = activeSlotDrag;
+  const now = performance.now();
+  const elapsed = Math.max(now - activeSlotDrag.lastMoveTime, 1);
+  const distance = Math.hypot(clientX - activeSlotDrag.lastClientX, clientY - activeSlotDrag.lastClientY);
+  const instantVelocity = distance / elapsed;
+  activeSlotDrag.pointerVelocity = activeSlotDrag.pointerVelocity * 0.35 + instantVelocity * 0.65;
+  activeSlotDrag.lastClientX = clientX;
+  activeSlotDrag.lastClientY = clientY;
+  activeSlotDrag.lastMoveTime = now;
+  preview.style.transform = `translate3d(${clientX - activeSlotDrag.offsetX + 12}px, ${clientY - activeSlotDrag.offsetY + 12}px, 0) rotate(-1deg) scale(1.02)`;
+  activeSlotDrag.pendingClientX = clientX;
+  activeSlotDrag.pendingClientY = clientY;
+  if (activeSlotDrag.dropPositionFrame) return;
+  activeSlotDrag.dropPositionFrame = window.requestAnimationFrame(() => {
+    if (!activeSlotDrag) return;
+    activeSlotDrag.dropPositionFrame = 0;
+    updateSlotDropPosition(activeSlotDrag.pendingClientX, activeSlotDrag.pendingClientY);
+  });
+}
+
+function flushSlotDropPosition() {
+  if (!activeSlotDrag) return;
+  if (activeSlotDrag.dropPositionFrame) {
+    window.cancelAnimationFrame(activeSlotDrag.dropPositionFrame);
+    activeSlotDrag.dropPositionFrame = 0;
+  }
+  updateSlotDropPosition(activeSlotDrag.pendingClientX, activeSlotDrag.pendingClientY);
+}
+
+function updateSlotDropPosition(clientX, clientY) {
+  if (!activeSlotDrag) return;
+  const { card, list, placeholder } = activeSlotDrag;
+  const target = document.elementFromPoint(clientX, clientY)?.closest("#slotsList .slot-card");
+  if (!target || target === card) {
+    $$("#slotsList .slot-card").forEach((slotCard) => slotCard.classList.remove("is-dragover"));
+    return;
+  }
+  const bounds = target.getBoundingClientRect();
+  const reference = clientY < bounds.top + bounds.height / 2 ? target : target.nextElementSibling;
+  const shouldReposition = reference !== placeholder && reference !== card;
+  let previousRects = null;
+  if (shouldReposition) {
+    previousRects = new Map(
+      [...list.querySelectorAll(".slot-card")].map((slotCard) => [
+        Number(slotCard.dataset.index),
+        slotCard.getBoundingClientRect()
+      ])
+    );
+    cancelSlotShiftAnimations();
+    list.insertBefore(placeholder, reference);
+  }
+  $$("#slotsList .slot-card").forEach((slotCard) => slotCard.classList.remove("is-dragover"));
+  target.classList.add("is-dragover");
+  if (previousRects) animateSlotCardShifts(previousRects);
+}
+
+function cancelSlotShiftAnimations() {
+  if (!activeSlotDrag?.shiftAnimations) return;
+  activeSlotDrag.shiftAnimations.forEach((animation) => animation.cancel());
+  activeSlotDrag.shiftAnimations.clear();
+}
+
+function animateSlotCardShifts(previousRects) {
+  if (!activeSlotDrag || window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+  const cards = $$("#slotsList .slot-card");
+  const duration = Math.round(Math.max(160, Math.min(320, 320 - activeSlotDrag.pointerVelocity * 120)));
+  cards.forEach((slotCard) => {
+    const previous = previousRects.get(Number(slotCard.dataset.index));
+    const next = slotCard.getBoundingClientRect();
+    if (!previous) return;
+    const offsetX = previous.left - next.left;
+    const offsetY = previous.top - next.top;
+    if (Math.hypot(offsetX, offsetY) < 1 || typeof slotCard.animate !== "function") return;
+    const animation = slotCard.animate(
+      [
+        { transform: `translate3d(${offsetX}px, ${offsetY}px, 0)` },
+        { transform: "translate3d(0, 0, 0)" }
+      ],
+      { duration, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+    );
+    activeSlotDrag.shiftAnimations.set(slotCard, animation);
+    animation.addEventListener("finish", () => {
+      if (activeSlotDrag?.shiftAnimations.get(slotCard) === animation) {
+        activeSlotDrag.shiftAnimations.delete(slotCard);
+      }
+    }, { once: true });
+  });
+}
+
+function finishSlotPointerDrag() {
+  if (!activeSlotDrag) return;
+  flushSlotDropPosition();
+  const drag = activeSlotDrag;
+  cancelSlotShiftAnimations();
+  const previousRects = new Map(
+    [...drag.list.querySelectorAll(".slot-card")].map((slotCard) => [
+      Number(slotCard.dataset.index),
+      slotCard.getBoundingClientRect()
+    ])
+  );
+  previousRects.set(drag.index, drag.preview.getBoundingClientRect());
+  drag.placeholder.replaceWith(drag.card);
+  const originalMedia = state.hero.media.slice();
+  const reorderedIndexes = [...drag.list.querySelectorAll(".slot-card")].map((slotCard) => Number(slotCard.dataset.index));
+  state.hero.media = reorderedIndexes.map((originalIndex) => originalMedia[originalIndex]);
+  cleanupSlotPointerDrag();
+  renderAll();
+  animateSlotReorder(previousRects, reorderedIndexes);
+}
+
+function animateSlotReorder(previousRects, reorderedIndexes) {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+  const cards = $$("#slotsList .slot-card");
+  const settlingCards = [];
+  cards.forEach((card, newIndex) => {
+    const previous = previousRects.get(reorderedIndexes[newIndex]);
+    const next = card.getBoundingClientRect();
+    if (!previous) return;
+    const offsetX = previous.left - next.left;
+    const offsetY = previous.top - next.top;
+    if (Math.hypot(offsetX, offsetY) < 1) return;
+    card.classList.add("is-slot-settling");
+    card.style.transition = "none";
+    card.style.transform = `translate3d(${offsetX}px, ${offsetY}px, 0)`;
+    settlingCards.push(card);
+  });
+  if (!settlingCards.length) return;
+
+  const clearSettling = (card) => {
+    card.classList.remove("is-slot-settling");
+    card.style.removeProperty("transition");
+    card.style.removeProperty("transform");
+  };
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      settlingCards.forEach((card) => {
+        card.style.transition = "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)";
+        card.style.transform = "translate3d(0, 0, 0)";
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          card.removeEventListener("transitionend", finish);
+          window.clearTimeout(timeoutId);
+          clearSettling(card);
+        };
+        const timeoutId = window.setTimeout(finish, 460);
+        card.addEventListener("transitionend", finish);
+      });
+    });
+  });
+}
+
+function cancelSlotPointerDrag() {
+  if (!activeSlotDrag) return;
+  const { card, list, placeholder, originalOrder } = activeSlotDrag;
+  placeholder.replaceWith(card);
+  const cardsByIndex = new Map([...list.querySelectorAll(".slot-card")].map((slotCard) => [Number(slotCard.dataset.index), slotCard]));
+  originalOrder.forEach((originalIndex) => {
+    const slotCard = cardsByIndex.get(originalIndex);
+    if (slotCard) list.appendChild(slotCard);
+  });
+  cleanupSlotPointerDrag();
+}
+
+function handleSlotPointerKeydown(event) {
+  if (event.key === "Escape") cancelSlotPointerDrag();
+}
+
+function cleanupSlotPointerDrag() {
+  if (!activeSlotDrag) return;
+  if (activeSlotDrag.dropPositionFrame) {
+    window.cancelAnimationFrame(activeSlotDrag.dropPositionFrame);
+    activeSlotDrag.dropPositionFrame = 0;
+  }
+  cancelSlotShiftAnimations();
+  activeSlotDrag.preview.remove();
+  activeSlotDrag.card.classList.remove("is-dragging");
+  $$("#slotsList .slot-card").forEach((slotCard) => slotCard.classList.remove("is-dragover"));
+  activeSlotDrag = null;
+  document.body.classList.remove("is-slot-dragging");
+  window.removeEventListener("pointermove", handleSlotPointerMove);
+  window.removeEventListener("pointerup", finishSlotPointerDrag);
+  window.removeEventListener("pointercancel", cancelSlotPointerDrag);
+  window.removeEventListener("keydown", handleSlotPointerKeydown);
+  document.dispatchEvent(new Event("slotdragend"));
+}
+
+function cancelActiveSlotDrag() {
+  cancelSlotPointerDrag();
 }
 
 function cropAspectForTemplate(templateId = state.hero.template) {
@@ -1272,6 +1881,7 @@ function renderPreview() {
     wireProjectDetailInteractions(root);
     initProjectDetailImageReveal(root);
     initBlurTexts(root);
+    updatePreviewScrollbar();
     return;
   }
   root.classList.remove("project-detail-mode");
@@ -1293,6 +1903,7 @@ function renderPreview() {
   if (screen === "all") {
     resetPreviewScroll(root, "hero");
   }
+  updatePreviewScrollbar();
 }
 
 function initBlurTexts(root = document) {
