@@ -1343,12 +1343,41 @@ function cancelActiveSlotDrag() {
   cancelSlotPointerDrag();
 }
 
-function cropAspectForTemplate(templateId = state.hero.template) {
+function mosaicSlotCropAspect(slotIndex) {
+  const previewLayers = $$(".hero-preview.hero-mosaic .zoom-parallax-layer");
+  const previewLayer = previewLayers[Number(slotIndex)];
+  if (previewLayer?.offsetWidth && previewLayer?.offsetHeight) {
+    return previewLayer.offsetWidth / previewLayer.offsetHeight;
+  }
+
+  const canvasRatio = {
+    "16-9": 16 / 9,
+    "4-3": 4 / 3,
+    "1-1": 1,
+    "4-5": 4 / 5,
+    "9-16": 9 / 16
+  }[editorCanvasRatioKey()] || 16 / 9;
+  const layoutByRatio = editorCanvasRatioKey() === "9-16"
+    ? [
+          [92, 27], [44, 20], [44, 20], [44, 20], [44, 20], [44, 22], [44, 22]
+      ]
+    : editorCanvasRatioKey() === "16-9"
+      ? [
+          [96, 42], [23, 48], [21, 22], [21, 22], [21, 22], [21, 22], [23, 48]
+        ]
+      : [
+          [96, 34], [23, 57], [21, 22], [21, 22], [21, 22], [21, 22], [23, 57]
+        ];
+  const [width, height] = layoutByRatio[Number(slotIndex)] || layoutByRatio[0];
+  return canvasRatio * width / height;
+}
+
+function cropAspectForTemplate(templateId = state.hero.template, slotIndex = null) {
   return {
     orbit: 4 / 5,
     film: 1,
     totem: 4 / 5,
-    mosaic: 4 / 3,
+    mosaic: slotIndex == null ? 4 / 3 : mosaicSlotCropAspect(slotIndex),
     "photo-orbit": 1,
     "scroll-morph": 4 / 5,
     "image-trail": 4 / 5,
@@ -1373,7 +1402,7 @@ function openCropModal(index, mediaOverride = null) {
   const modal = $("#cropModal");
   const image = $("#cropImage");
   if (!modal || !image) return;
-  const aspect = cropAspectForTemplate();
+  const aspect = cropAspectForTemplate(currentHeroTemplate().id, index);
   cropState = {
     target: "hero",
     slotIndex: index,
@@ -1961,15 +1990,15 @@ function initOrbitCarousels(root, { autoPlay = true } = {}) {
     if (!cards.length) return;
 
     const points = [
-      { p: 0, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, saturate: 0.78, z: 2 },
-      { p: 0.125, left: 72, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, saturate: 0.86, z: 4 },
-      { p: 0.25, left: 86, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, saturate: 0.95, z: 7 },
+      { p: 0, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, saturate: 0.92, z: 2 },
+      { p: 0.125, left: 72, top: 20, scale: 0.82, opacity: 0.84, brightness: 0.94, saturate: 0.98, z: 4 },
+      { p: 0.25, left: 86, top: 44, scale: 0.96, opacity: 1, brightness: 1, saturate: 1, z: 7 },
       { p: 0.375, left: 72, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, saturate: 1, z: 10 },
-      { p: 0.5, left: 50, top: 82, scale: 1.16, opacity: 1, brightness: 1.05, saturate: 1.02, z: 12 },
+      { p: 0.5, left: 50, top: 82, scale: 1.16, opacity: 1, brightness: 1.02, saturate: 1.02, z: 12 },
       { p: 0.625, left: 28, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, saturate: 1, z: 10 },
-      { p: 0.75, left: 14, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, saturate: 0.95, z: 7 },
-      { p: 0.875, left: 28, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, saturate: 0.86, z: 4 },
-      { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, saturate: 0.78, z: 2 }
+      { p: 0.75, left: 14, top: 44, scale: 0.96, opacity: 1, brightness: 1, saturate: 1, z: 7 },
+      { p: 0.875, left: 28, top: 20, scale: 0.82, opacity: 0.84, brightness: 0.94, saturate: 0.98, z: 4 },
+      { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, saturate: 0.92, z: 2 }
     ];
     const duration = (parseFloat(getComputedStyle(flow).getPropertyValue("--anim-duration")) || 22) * 1000;
     const sample = (progress) => {
@@ -2523,13 +2552,13 @@ function renderTickerLoop(items) {
 
 function renderZoomParallax(items) {
   const layouts = [
-    { x: "42%", y: "5%", w: "25%", h: "32%", rotate: 0, z: 7 },
-    { x: "19%", y: "18%", w: "18%", h: "47%", rotate: 0, z: 6 },
-    { x: "42%", y: "40%", w: "20%", h: "25%", rotate: 0, z: 5 },
-    { x: "64%", y: "40%", w: "21%", h: "25%", rotate: 0, z: 4 },
-    { x: "16%", y: "68%", w: "30%", h: "22%", rotate: 0, z: 3 },
-    { x: "48%", y: "68%", w: "18%", h: "24%", rotate: 0, z: 2 },
-    { x: "71%", y: "68%", w: "14%", h: "19%", rotate: 0, z: 1 }
+    { x: "2%", y: "2%", w: "96%", h: "42%", rotate: 0, z: 8 },
+    { x: "2%", y: "48%", w: "23%", h: "48%", rotate: 0, z: 7 },
+    { x: "27%", y: "48%", w: "21%", h: "22%", rotate: 0, z: 6 },
+    { x: "51%", y: "48%", w: "21%", h: "22%", rotate: 0, z: 5 },
+    { x: "27%", y: "73%", w: "21%", h: "22%", rotate: 0, z: 4 },
+    { x: "51%", y: "73%", w: "21%", h: "22%", rotate: 0, z: 3 },
+    { x: "75%", y: "48%", w: "23%", h: "48%", rotate: 0, z: 2 }
   ];
   return `<div class="zoom-parallax" tabindex="0" role="region" aria-label="Interactive mosaic gallery">
     <div class="zoom-parallax-spotlight"></div>
@@ -2537,14 +2566,9 @@ function renderZoomParallax(items) {
       ${items.map((item, index) => {
         const layout = layouts[index % layouts.length];
         const alt = item ? escapeHTML(item.name || `作品 ${index + 1}`) : `Slot ${index + 1}`;
-        return `<div class="zoom-parallax-layer" data-home-z="${layout.z}" data-zoom="1" style="--x:${layout.x};--y:${layout.y};--w:${layout.w};--h:${layout.h};--rotate:${layout.rotate}deg;--card-scale:1;--layer-opacity:1;z-index:${layout.z};">
+        return `<div class="zoom-parallax-layer" data-home-z="${layout.z}" data-mosaic-primary="${index === 0 ? "true" : "false"}" data-zoom="1" style="--x:${layout.x};--y:${layout.y};--w:${layout.w};--h:${layout.h};--rotate:${layout.rotate}deg;--card-scale:1;--layer-opacity:1;z-index:${layout.z};">
           <div class="zoom-parallax-frame" tabindex="0" role="button" aria-label="Zoom image ${index + 1}">
             ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
-            <div class="mosaic-zoom-controls" aria-hidden="true">
-              <button type="button" data-mosaic-action="out">-</button>
-              <button type="button" data-mosaic-action="reset">1x</button>
-              <button type="button" data-mosaic-action="in">+</button>
-            </div>
           </div>
         </div>`;
       }).join("")}
@@ -2571,7 +2595,6 @@ function renderVerticalImageStack(items, currentOverride = null) {
     </div>
     <div class="vertical-stack-hint" aria-hidden="true">
       <span class="stack-arrow stack-arrow-up"></span>
-      <span>Scroll or drag</span>
       <span class="stack-arrow stack-arrow-down"></span>
     </div>
   </div>`;
@@ -3919,6 +3942,7 @@ function initVerticalImageStacks(root) {
   $$(".vertical-image-stack", root).forEach((stack) => {
     const total = $$(".vertical-stack-card", stack).length;
     if (!total) return;
+    const stage = $(".vertical-stack-stage", stack);
     applyVerticalStackState(stack, state.hero.totemIndex || 0);
 
     const navigate = (direction) => {
@@ -3941,8 +3965,9 @@ function initVerticalImageStacks(root) {
     });
 
     stack.addEventListener("wheel", (event) => {
-      if (Math.abs(event.deltaY) <= 30) return;
+      if (!stage?.contains(event.target)) return;
       event.preventDefault();
+      if (Math.abs(event.deltaY) <= 30) return;
       navigate(event.deltaY > 0 ? 1 : -1);
     }, { passive: false });
 
@@ -4000,6 +4025,13 @@ function applyVerticalStackState(stack, currentIndex) {
 function initZoomParallax(root) {
   $$(".zoom-parallax", root).forEach((container) => {
     const layers = $$(".zoom-parallax-layer", container);
+    const stage = $(".zoom-parallax-stage", container) || container;
+    const restoreActive = () => {
+      const active = $(".zoom-parallax-layer.is-active", container);
+      if (!active) return;
+      applyMosaicLayerZoom(container, active, 1, true);
+      $(".zoom-parallax-frame", active)?.blur();
+    };
     layers.forEach((layer) => applyMosaicLayerZoom(container, layer, Number(layer.dataset.zoom) || 1, false));
     const onWheel = (event) => {
       if (Math.abs(event.deltaY) < 8) return;
@@ -4014,16 +4046,26 @@ function initZoomParallax(root) {
     const onClick = (event) => {
       const button = event.target.closest("[data-mosaic-action]");
       const frameNode = event.target.closest(".zoom-parallax-frame");
-      if (!frameNode || !container.contains(frameNode)) return;
+      if (!frameNode || !container.contains(frameNode)) {
+        if (event.target === container || event.target === stage || event.target.classList.contains("zoom-parallax-spotlight")) {
+          restoreActive();
+        }
+        return;
+      }
       const layer = frameNode.closest(".zoom-parallax-layer");
       if (!layer) return;
       const current = Number(layer.dataset.zoom) || 1;
       if (button?.dataset.mosaicAction === "in") applyMosaicLayerZoom(container, layer, current + 0.24, true);
       else if (button?.dataset.mosaicAction === "out") applyMosaicLayerZoom(container, layer, current - 0.24, true);
       else if (button?.dataset.mosaicAction === "reset") applyMosaicLayerZoom(container, layer, 1, true);
-      else applyMosaicLayerZoom(container, layer, current > 1.08 ? 1 : 1.5, true);
+      else applyMosaicLayerZoom(container, layer, current > 1.02 ? 1 : 1.5, true);
     };
     const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        restoreActive();
+        return;
+      }
       const frameNode = event.target.closest(".zoom-parallax-frame");
       if (!frameNode || !container.contains(frameNode)) return;
       const layer = frameNode.closest(".zoom-parallax-layer");
@@ -4037,9 +4079,7 @@ function initZoomParallax(root) {
         applyMosaicLayerZoom(container, layer, current - 0.18, true);
       } else if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        applyMosaicLayerZoom(container, layer, current > 1.08 ? 1 : 1.5, true);
-      } else if (event.key === "Escape") {
-        applyMosaicLayerZoom(container, layer, 1, true);
+        applyMosaicLayerZoom(container, layer, current > 1.02 ? 1 : 1.5, true);
       }
     };
 
@@ -4059,7 +4099,8 @@ function applyMosaicLayerZoom(container, layer, nextZoom, activate) {
   const stage = $(".zoom-parallax-stage", container) || container;
   const baseWidth = Math.max(layer.offsetWidth, 1);
   const baseHeight = Math.max(layer.offsetHeight, 1);
-  const maxZoom = Math.max(1, Math.min(2.15, (stage.clientWidth * 0.86) / baseWidth, (stage.clientHeight * 0.86) / baseHeight));
+  const viewportWidth = layer.dataset.mosaicPrimary === "true" ? 0.995 : 0.86;
+  const maxZoom = Math.max(1, Math.min(2.15, (stage.clientWidth * viewportWidth) / baseWidth, (stage.clientHeight * 0.86) / baseHeight));
   const zoom = Math.min(maxZoom, Math.max(1, Number(nextZoom) || 1));
   layer.dataset.zoom = zoom.toFixed(2);
   layer.style.setProperty("--card-scale", zoom.toFixed(3));
@@ -6096,15 +6137,15 @@ function parseCSSBrightness(filter) {
 
 function orbitExportFrameAt(phase) {
   const frames = [
-    { p: 0, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, z: 2 },
-    { p: 0.125, left: 72, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, z: 4 },
-    { p: 0.25, left: 86, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, z: 7 },
+    { p: 0, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, z: 2 },
+    { p: 0.125, left: 72, top: 20, scale: 0.82, opacity: 0.84, brightness: 0.94, z: 4 },
+    { p: 0.25, left: 86, top: 44, scale: 0.96, opacity: 1, brightness: 1, z: 7 },
     { p: 0.375, left: 72, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, z: 10 },
-    { p: 0.5, left: 50, top: 82, scale: 1.16, opacity: 1, brightness: 1.05, z: 12 },
+    { p: 0.5, left: 50, top: 82, scale: 1.16, opacity: 1, brightness: 1.02, z: 12 },
     { p: 0.625, left: 28, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, z: 10 },
-    { p: 0.75, left: 14, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, z: 7 },
-    { p: 0.875, left: 28, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, z: 4 },
-    { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, z: 2 }
+    { p: 0.75, left: 14, top: 44, scale: 0.96, opacity: 1, brightness: 1, z: 7 },
+    { p: 0.875, left: 28, top: 20, scale: 0.82, opacity: 0.84, brightness: 0.94, z: 4 },
+    { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, z: 2 }
   ];
   const current = frames.find((frame, index) => phase >= frame.p && phase <= frames[index + 1]?.p);
   const index = Math.max(0, frames.indexOf(current));
@@ -6526,15 +6567,15 @@ async function buildPublishedDocument(options = {}) {
             || "22s";
           var duration = (parseFloat(rawDuration) || 22) * (rawDuration.endsWith("ms") ? 1 : 1000);
           var points = [
-            { p: 0, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, saturate: 0.78, z: 2 },
-            { p: 0.125, left: 72, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, saturate: 0.86, z: 4 },
-            { p: 0.25, left: 86, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, saturate: 0.95, z: 7 },
+            { p: 0, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, saturate: 0.92, z: 2 },
+            { p: 0.125, left: 72, top: 20, scale: 0.82, opacity: 0.84, brightness: 0.94, saturate: 0.98, z: 4 },
+            { p: 0.25, left: 86, top: 44, scale: 0.96, opacity: 1, brightness: 1, saturate: 1, z: 7 },
             { p: 0.375, left: 72, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, saturate: 1, z: 10 },
-            { p: 0.5, left: 50, top: 82, scale: 1.16, opacity: 1, brightness: 1.05, saturate: 1.02, z: 12 },
+            { p: 0.5, left: 50, top: 82, scale: 1.16, opacity: 1, brightness: 1.02, saturate: 1.02, z: 12 },
             { p: 0.625, left: 28, top: 72, scale: 1.08, opacity: 0.98, brightness: 1, saturate: 1, z: 10 },
-            { p: 0.75, left: 14, top: 44, scale: 0.96, opacity: 0.76, brightness: 0.85, saturate: 0.95, z: 7 },
-            { p: 0.875, left: 28, top: 20, scale: 0.82, opacity: 0.48, brightness: 0.62, saturate: 0.86, z: 4 },
-            { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.32, brightness: 0.48, saturate: 0.78, z: 2 }
+            { p: 0.75, left: 14, top: 44, scale: 0.96, opacity: 1, brightness: 1, saturate: 1, z: 7 },
+            { p: 0.875, left: 28, top: 20, scale: 0.82, opacity: 0.84, brightness: 0.94, saturate: 0.98, z: 4 },
+            { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, saturate: 0.92, z: 2 }
           ];
           function mix(a, b, t) { return a + (b - a) * t; }
           function sample(progress) {
@@ -7478,6 +7519,7 @@ async function buildPublishedDocument(options = {}) {
         document.querySelectorAll(".vertical-image-stack").forEach(function(stack) {
           var cards = Array.prototype.slice.call(stack.querySelectorAll(".vertical-stack-card"));
           var dots = Array.prototype.slice.call(stack.querySelectorAll(".vertical-stack-dot"));
+          var stage = stack.querySelector(".vertical-stack-stage");
           var currentNode = stack.querySelector(".vertical-stack-current");
           var total = cards.length;
           var current = Number(stack.dataset.current) || 0;
@@ -7512,8 +7554,9 @@ async function buildPublishedDocument(options = {}) {
             });
           });
           stack.addEventListener("wheel", function(event) {
-            if (Math.abs(event.deltaY) <= 30) return;
+            if (!stage || !stage.contains(event.target)) return;
             event.preventDefault();
+            if (Math.abs(event.deltaY) <= 30) return;
             navigate(event.deltaY > 0 ? 1 : -1);
           }, { passive: false });
           stack.addEventListener("pointerdown", function(event) {
@@ -7535,7 +7578,8 @@ async function buildPublishedDocument(options = {}) {
           var stage = container.querySelector(".zoom-parallax-stage") || container;
           var baseWidth = Math.max(layer.offsetWidth, 1);
           var baseHeight = Math.max(layer.offsetHeight, 1);
-          var maxZoom = Math.max(1, Math.min(2.15, (stage.clientWidth * 0.86) / baseWidth, (stage.clientHeight * 0.86) / baseHeight));
+          var viewportWidth = layer.dataset.mosaicPrimary === "true" ? 0.995 : 0.86;
+          var maxZoom = Math.max(1, Math.min(2.15, (stage.clientWidth * viewportWidth) / baseWidth, (stage.clientHeight * 0.86) / baseHeight));
           var zoom = Math.min(maxZoom, Math.max(1, Number(nextZoom) || 1));
           layer.dataset.zoom = zoom.toFixed(2);
           layer.style.setProperty("--card-scale", zoom.toFixed(3));
@@ -7568,6 +7612,14 @@ async function buildPublishedDocument(options = {}) {
           }
         }
         document.querySelectorAll(".zoom-parallax").forEach(function(container) {
+          var stage = container.querySelector(".zoom-parallax-stage") || container;
+          var restoreActive = function() {
+            var active = container.querySelector(".zoom-parallax-layer.is-active");
+            if (!active) return;
+            applyLayerZoom(container, active, 1, true);
+            var frame = active.querySelector(".zoom-parallax-frame");
+            if (frame) frame.blur();
+          };
           Array.prototype.slice.call(container.querySelectorAll(".zoom-parallax-layer")).forEach(function(layer) {
             applyLayerZoom(container, layer, Number(layer.dataset.zoom) || 1, false);
           });
@@ -7583,14 +7635,24 @@ async function buildPublishedDocument(options = {}) {
           container.addEventListener("click", function(event) {
             var button = event.target.closest("[data-mosaic-action]");
             var frame = event.target.closest(".zoom-parallax-frame");
-            if (!frame || !container.contains(frame)) return;
+            if (!frame || !container.contains(frame)) {
+              if (event.target === container || event.target === stage || event.target.classList.contains("zoom-parallax-spotlight")) {
+                restoreActive();
+              }
+              return;
+            }
             var layer = frame.closest(".zoom-parallax-layer");
             if (!layer) return;
             var current = Number(layer.dataset.zoom) || 1;
             if (button && button.dataset.mosaicAction === "in") applyLayerZoom(container, layer, current + 0.24, true);
             else if (button && button.dataset.mosaicAction === "out") applyLayerZoom(container, layer, current - 0.24, true);
             else if (button && button.dataset.mosaicAction === "reset") applyLayerZoom(container, layer, 1, true);
-            else applyLayerZoom(container, layer, current > 1.08 ? 1 : 1.5, true);
+            else applyLayerZoom(container, layer, current > 1.02 ? 1 : 1.5, true);
+          });
+          container.addEventListener("keydown", function(event) {
+            if (event.key !== "Escape") return;
+            event.preventDefault();
+            restoreActive();
           });
         });
       })();
