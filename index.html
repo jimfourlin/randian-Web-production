@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>四屏作品集模板编辑器</title>
-    <link rel="stylesheet" href="styles.css?v=photo-orbit-ivory-card-style-20260720" />
+    <link rel="stylesheet" href="styles.css?v=scroll-morph-arc-gallery-20260720-11" />
     <style>
       .panel-section:has(#styleTarget) {
         display: none !important;
@@ -1151,6 +1151,15 @@ label span,
   place-items: center;
 }
 
+.site-preview.is-full-preview .hero-preview.hero-scroll-morph .preview-inner,
+.site-preview.is-full-preview .hero-preview.hero-scroll-morph .media-zone-scroll-morph {
+  display: block;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  height: 100%;
+}
+
 .site-preview.is-full-preview .hero-preview.hero-mosaic .preview-inner,
 .site-preview.is-full-preview .hero-preview.hero-mosaic .media-zone-mosaic {
   min-height: 0;
@@ -1714,7 +1723,6 @@ label span,
 .hero-bg-ivory .media-card,
 .hero-bg-ivory .circular-gallery-card,
 .hero-bg-ivory .photo-orbit-surface,
-.hero-bg-ivory .scroll-morph-face,
 .hero-bg-ivory .image-trail-source-card,
 .hero-bg-ivory .three-d-carousel-surface,
 .hero-bg-ivory .stellar-card-surface,
@@ -1803,7 +1811,6 @@ label span,
   opacity: 0.62;
 }
 
-.hero-bg-ivory .scroll-morph-face::after,
 .hero-bg-ivory .three-d-carousel-surface::after,
 .hero-bg-ivory .stellar-card-surface::after,
 .hero-bg-ivory .masonry-gallery-card::after,
@@ -2428,15 +2435,16 @@ label span,
   width: 100%;
   height: 100%;
   min-height: 320px;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
   color: inherit;
   border-radius: var(--media-radius, 8px);
   cursor: default;
-  touch-action: none;
+  touch-action: pan-y;
   user-select: none;
   box-shadow: none;
   isolation: isolate;
+  contain: layout;
 }
 
 .scroll-morph::before {
@@ -2472,115 +2480,198 @@ label span,
 .scroll-morph-stage {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  perspective: 1000px;
+  overflow: visible;
+  perspective: 1100px;
   transform-style: preserve-3d;
+}
+
+.scroll-morph-stage::before {
+  display: none;
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2400px;
+  height: 1500px;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  pointer-events: none;
+  z-index: 0;
+  animation: scrollMorphGlowPulse 2.2s ease-in-out infinite;
+}
+
+.scroll-morph-slider {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
 }
 
 .scroll-morph-card {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: clamp(42px, 6.2cqw, 64px);
-  height: calc(clamp(42px, 6.2cqw, 64px) * 1.42);
-  opacity: var(--sm-opacity, 0);
-  transform:
-    translate3d(calc(-50% + var(--sm-x, 0px)), calc(-50% + var(--sm-y, 0px)), 0)
-    rotate(var(--sm-rotate, 0deg))
-    scale(var(--sm-scale, 1));
+  left: 0;
+  top: 0;
+  width: var(--sm-card-width, 130px);
+  height: var(--sm-card-height, 195px);
+  border-radius: var(--media-radius, 8px);
+  overflow: hidden;
   transform-origin: center center;
-  transform-style: preserve-3d;
-  transition:
-    transform 580ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 360ms ease,
-    filter 260ms ease;
-  will-change: transform, opacity;
-  cursor: pointer;
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+  box-shadow: var(--media-shadow, 0 20px 60px rgba(0, 0, 0, 0.38));
+  transition: filter 0.35s ease;
+  cursor: default;
 }
 
 .scroll-morph-card:hover {
-  z-index: 2000 !important;
-}
-
-.scroll-morph-card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.scroll-morph-card:hover .scroll-morph-card-inner {
-  transform: rotateY(180deg);
+  filter: brightness(1.08);
 }
 
 .scroll-morph-face {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: var(--media-radius, 8px);
+  border: var(--media-border, 1px solid rgba(255, 255, 255, 0.16));
+  background: #20211f;
+  box-shadow: none;
   backface-visibility: hidden;
-  box-shadow: 0 14px 32px rgba(15, 17, 16, 0.22);
 }
 
 .scroll-morph-front {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0)),
-    linear-gradient(135deg, #d8d8d2, #a9aba5);
-}
-
-.scroll-morph-back {
-  transform: rotateY(180deg);
-  background: #111312;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f4f0e8;
-  text-align: center;
-  gap: 2px;
-  align-content: center;
-  text-transform: uppercase;
-}
-
-.scroll-morph-back span {
-  color: #b6c9ff;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-
-.scroll-morph-back strong {
-  color: #fff;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0;
+  background: #20211f;
 }
 
 .scroll-morph-front img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.scroll-morph-index {
+.scroll-morph-dot-overlay {
   position: absolute;
-  left: 8px;
-  bottom: 7px;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 9px;
-  font-weight: 750;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.75) 1.5px, transparent 2.5px);
+  background-size: 4px 4px;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: linear-gradient(to right, white 0%, white var(--reveal, 0%), transparent var(--reveal, 0%), transparent 100%);
+  mask-image: linear-gradient(to right, white 0%, white var(--reveal, 0%), transparent var(--reveal, 0%), transparent 100%);
+  will-change: mask-image, -webkit-mask-image;
+}
+
+.scroll-morph-glow-bar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  z-index: 300;
+  pointer-events: none;
+}
+
+.scroll-morph-glow-bar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 160px;
+  height: calc(var(--sm-glow-height, 568px) * 1.08);
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.26);
+  filter: blur(70px);
+  border-radius: 50%;
+  animation: scrollMorphBarPulse 2.2s ease-in-out infinite;
+}
+
+.scroll-morph-glow-bar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: var(--sm-glow-height, 568px);
+  transform: translate(-50%, -50%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 18%, rgba(255, 255, 255, 0.95) 82%, rgba(255, 255, 255, 0) 100%);
+  filter: blur(2px);
+  border-radius: 50%;
+  animation: scrollMorphBarPulse 2.2s ease-in-out infinite;
+}
+
+@keyframes scrollMorphGlowPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.85); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+}
+
+@keyframes scrollMorphBarPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.85; }
+  50% { transform: translate(-50%, -50%) scale(1.06); opacity: 1; }
+}
+
+.hero-bg-ivory .scroll-morph {
+  background: transparent;
+}
+
+.hero-bg-ivory .scroll-morph-card {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.hero-bg-ivory .scroll-morph-face {
+  background: #f3f3f4;
+  border-color: rgba(28, 29, 26, 0.12);
+  box-shadow: none;
+}
+
+.hero-bg-ivory .scroll-morph-dot-overlay {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.9) 1.5px, transparent 2.5px);
+  mix-blend-mode: normal;
+}
+
+.hero-bg-ivory .scroll-morph-stage::before {
+  display: none;
+  background: transparent;
+}
+
+.hero-bg-ivory .scroll-morph-card.is-placeholder .placeholder-mark {
+  color: rgba(28, 29, 26, 0.58);
+  border-color: rgba(28, 29, 26, 0.14);
+  background: transparent;
+}
+
+.hero-preview.hero-scroll-morph .scroll-morph-card .placeholder-mark {
+  width: 44%;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  font-family: "Montserrat", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
   line-height: 1;
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  background: transparent;
 }
 
 .scroll-morph-card.is-placeholder .placeholder-mark {
-  width: 72%;
-  color: rgba(240, 237, 228, 0.54);
-  border-color: rgba(240, 237, 228, 0.18);
+  color: rgba(240, 237, 228, 0.62);
 }
 
-.scroll-morph-hint {
+.hero-bg-ivory .scroll-morph-card.is-placeholder .placeholder-mark {
+  border: 1px solid rgba(28, 29, 26, 0.14);
+}
+
+.scroll-morph-hint,
+.scroll-morph-copy,
+.scroll-morph-index,
+.scroll-morph-back,
+.scroll-morph-card-inner {
   display: none;
 }
 
@@ -8436,6 +8527,6 @@ html.image-export *,
 </script>
 
     <script src="html2canvas.min.js"></script>
-    <script src="app.js?v=photo-orbit-ivory-card-style-20260720"></script>
+    <script src="app.js?v=scroll-morph-arc-gallery-20260720-11"></script>
   </body>
 </html>

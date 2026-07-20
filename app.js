@@ -1379,7 +1379,7 @@ function cropAspectForTemplate(templateId = state.hero.template, slotIndex = nul
     totem: 4 / 5,
     mosaic: slotIndex == null ? 4 / 3 : mosaicSlotCropAspect(slotIndex),
     "photo-orbit": 1,
-    "scroll-morph": 4 / 5,
+    "scroll-morph": 3 / 4,
     "image-trail": 4 / 5,
     "three-d-carousel": 4 / 5,
     "stellar-gallery": 4 / 5,
@@ -2363,24 +2363,15 @@ function renderPhotoOrbit(items) {
 function renderScrollMorph(items) {
   return `<div class="scroll-morph" tabindex="0" role="region" aria-label="Scroll Morph gallery">
     <div class="scroll-morph-stage">
-      ${items.map((item, index) => {
-        const scatterX = Math.sin(index * 2.17) * 760;
-        const scatterY = Math.cos(index * 1.83) * 460;
-        const scatterR = Math.sin(index * 1.31) * 90;
-        const alt = item ? escapeHTML(item.name || `作品 ${index + 1}`) : `Slot ${index + 1}`;
-        return `<div class="scroll-morph-card ${item ? "has-media" : "is-placeholder"}" data-index="${index}" data-scatter-x="${scatterX.toFixed(2)}" data-scatter-y="${scatterY.toFixed(2)}" data-scatter-r="${scatterR.toFixed(2)}">
-          <div class="scroll-morph-card-inner">
-            <div class="scroll-morph-face scroll-morph-front">
-              ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
-              <span class="scroll-morph-index">${String(index + 1).padStart(2, "0")}</span>
-            </div>
-            <div class="scroll-morph-face scroll-morph-back">
-              <span>View</span>
-              <strong>Details</strong>
-            </div>
+      <div class="scroll-morph-slider">
+        ${items.map((item, index) => `<div class="scroll-morph-card ${item ? "has-media" : "is-placeholder"}" data-index="${index}">
+          <div class="scroll-morph-face scroll-morph-front">
+            ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
           </div>
-        </div>`;
-      }).join("")}
+          <div class="scroll-morph-dot-overlay" aria-hidden="true"></div>
+        </div>`).join("")}
+      </div>
+      <div class="scroll-morph-glow-bar" aria-hidden="true"></div>
     </div>
   </div>`;
 }
@@ -4289,136 +4280,133 @@ function cleanupPhotoOrbits() {
 
 function initScrollMorphs(root) {
   $$(".scroll-morph", root).forEach((container) => {
-    const cards = $$(".scroll-morph-card", container);
+    const stage = $(".scroll-morph-stage", container);
+    const slider = $(".scroll-morph-slider", container);
+    const cards = $$(".scroll-morph-card", slider || container);
     if (!cards.length) return;
 
     const total = cards.length;
-    const maxScroll = 3000;
-    const stateLocal = {
-      phase: state.animationPlaying ? "scatter" : "circle",
-      scroll: 0,
-      targetScroll: 0,
-      morph: 0,
-      rotate: 0,
-      parallax: 0,
-      parallaxTarget: 0,
+    const speed = state.hero.speed === "fast" ? 0.21 : state.hero.speed === "slow" ? 0.06 : 0.12;
+    const canvasAspect = {
+      "16-9": 16 / 9,
+      "4-3": 4 / 3,
+      "1-1": 1,
+      "4-5": 4 / 5,
+      "9-16": 9 / 16
+    }[state.hero.ratio] || 16 / 9;
+    const local = {
+      offset: 0,
+      lastTime: performance.now(),
       frame: 0,
-      touchY: 0
+      measureFrame: 0,
+      baseWidth: 320,
+      baseHeight: 568,
+      spacing: 300,
+      beltLength: total * 300
     };
-    const lerpLocal = (start, end, t) => start * (1 - t) + end * t;
-    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-
-    const setTargets = () => {
-      const rect = container.getBoundingClientRect();
-      const width = rect.width || 1;
-      const height = rect.height || 1;
-      const minDimension = Math.min(width, height);
-      const morphTarget = clamp(stateLocal.scroll / 600, 0, 1);
-      const rotateTarget = clamp((stateLocal.scroll - 600) / (maxScroll - 600), 0, 1) * 360;
-      stateLocal.morph = lerpLocal(stateLocal.morph, morphTarget, 0.075);
-      stateLocal.rotate = lerpLocal(stateLocal.rotate, rotateTarget, 0.075);
-      stateLocal.parallax = lerpLocal(stateLocal.parallax, stateLocal.parallaxTarget, 0.08);
-      container.style.setProperty("--sm-copy-opacity", clamp((stateLocal.morph - 0.8) / 0.2, 0, 1).toFixed(3));
-
-      cards.forEach((card, index) => {
-        let x = Number(card.dataset.scatterX || 0);
-        let y = Number(card.dataset.scatterY || 0);
-        let rotation = Number(card.dataset.scatterR || 0);
-        let scale = 0.6;
-        let opacity = 0;
-
-        if (stateLocal.phase === "line") {
-          const lineSpacing = Math.min(70, Math.max(42, width / Math.max(total - 1, 1)));
-          const lineTotal = (total - 1) * lineSpacing;
-          x = index * lineSpacing - lineTotal / 2;
-          y = 0;
-          rotation = 0;
-          scale = 1;
-          opacity = 1;
-        } else if (stateLocal.phase === "circle") {
-          const circleRadius = Math.min(minDimension * 0.35, 350);
-          const circleAngle = (index / total) * 360;
-          const circleRad = circleAngle * Math.PI / 180;
-          const circleX = Math.cos(circleRad) * circleRadius;
-          const circleY = Math.sin(circleRad) * circleRadius;
-          const circleRotation = circleAngle + 90;
-
-          const isMobile = width < 768;
-          const baseRadius = Math.min(width, height * 1.5);
-          const arcRadius = baseRadius * (isMobile ? 1.4 : 1.1);
-          const arcApexY = height * (isMobile ? 0.35 : 0.25);
-          const arcCenterY = arcApexY + arcRadius;
-          const spreadAngle = isMobile ? 100 : 130;
-          const startAngle = -90 - spreadAngle / 2;
-          const step = spreadAngle / Math.max(total - 1, 1);
-          const scrollProgress = clamp(stateLocal.rotate / 360, 0, 1);
-          const boundedRotation = -scrollProgress * spreadAngle * 0.8;
-          const currentArcAngle = startAngle + index * step + boundedRotation;
-          const arcRad = currentArcAngle * Math.PI / 180;
-          const arcX = Math.cos(arcRad) * arcRadius + stateLocal.parallax;
-          const arcY = Math.sin(arcRad) * arcRadius + arcCenterY - height * 0.5;
-          const arcRotation = currentArcAngle + 90;
-          const arcScale = isMobile ? 1.25 : 1.58;
-
-          x = lerpLocal(circleX, arcX, stateLocal.morph);
-          y = lerpLocal(circleY, arcY, stateLocal.morph);
-          rotation = lerpLocal(circleRotation, arcRotation, stateLocal.morph);
-          scale = lerpLocal(1, arcScale, stateLocal.morph);
-          opacity = 1;
-        }
-
-        card.style.setProperty("--sm-x", `${x.toFixed(2)}px`);
-        card.style.setProperty("--sm-y", `${y.toFixed(2)}px`);
-        card.style.setProperty("--sm-rotate", `${rotation.toFixed(2)}deg`);
-        card.style.setProperty("--sm-scale", scale.toFixed(3));
-        card.style.setProperty("--sm-opacity", opacity.toFixed(3));
-        card.style.zIndex = String(Math.round(1000 + y));
+    const measure = () => {
+      const width = Math.max(container.clientWidth, 280);
+      const height = Math.max(container.clientHeight, 260);
+      const isPhone = width <= 560;
+      // Preview mode can expose a short intermediate grid row while it switches layouts.
+      // Use the canvas ratio as the lower bound so the first measurement cannot shrink cards.
+      const logicalHeight = Math.max(height, width / canvasAspect);
+      const cardWidth = Math.max(132, Math.min(
+        isPhone ? 210 : 320,
+        width * (isPhone ? 0.31 : 0.22),
+        (logicalHeight * 0.72) / (4 / 3)
+      ));
+      const cardHeight = cardWidth * (4 / 3);
+      const spacing = isPhone ? Math.max(140, cardWidth * 0.96) : Math.min(300, Math.max(190, width * 0.22));
+      container.style.setProperty("--sm-card-width", `${cardWidth}px`);
+      container.style.setProperty("--sm-card-height", `${cardHeight}px`);
+      container.style.setProperty("--sm-glow-height", `${(cardHeight * 0.72).toFixed(2)}px`);
+      local.spacing = spacing;
+      local.beltLength = total * spacing;
+      const first = cards[0];
+      const savedTransform = first.style.transform;
+      first.style.transform = "none";
+      if (first.offsetWidth > 0) local.baseWidth = first.offsetWidth;
+      if (first.offsetHeight > 0) local.baseHeight = first.offsetHeight;
+      first.style.transform = savedTransform;
+    };
+    const scheduleMeasure = () => {
+      if (local.measureFrame) window.cancelAnimationFrame(local.measureFrame);
+      local.measureFrame = window.requestAnimationFrame(() => {
+        local.measureFrame = 0;
+        measure();
+        project();
       });
     };
+    const resizeObserver = "ResizeObserver" in window ? new ResizeObserver(scheduleMeasure) : null;
+    resizeObserver?.observe(container);
+    window.addEventListener("resize", scheduleMeasure);
+    const project = () => {
+      const width = Math.max(stage?.clientWidth || container.clientWidth, 280);
+      const scaleFactor = width * 0.38;
+      const maxN = width <= 560 ? 2.7 : 2;
+      const stageRect = stage?.getBoundingClientRect();
+      const glowX = stageRect ? stageRect.left + stageRect.width / 2 : 0;
+      cards.forEach((card, index) => {
+        let position = local.offset - index * local.spacing;
+        position = ((position + local.beltLength / 2) % local.beltLength + local.beltLength) % local.beltLength - local.beltLength / 2;
+        const n = position / scaleFactor;
+        if (Math.abs(n) > maxN) {
+          card.style.opacity = "0";
+          card.style.visibility = "hidden";
+          return;
+        }
+        card.style.visibility = "visible";
+        const absN = Math.abs(n);
+        const scale = 0.72 + 0.28 * absN * absN;
+        const y = 15 * absN * absN;
+        const rotateY = -n * 35;
+        const zIndex = Math.round(100 - absN * 60);
+        const opacity = absN > 1 ? Math.max(0, 1 - (absN - 1) / (maxN - 1)) : 1;
+        const tx = position - local.baseWidth / 2;
+        const ty = y - local.baseHeight / 2;
+        const image = $("img", card);
+        const overlay = $(".scroll-morph-dot-overlay", card);
 
-    const tick = () => {
-      stateLocal.scroll = lerpLocal(stateLocal.scroll, stateLocal.targetScroll, 0.12);
-      setTargets();
-      stateLocal.frame = window.requestAnimationFrame(tick);
+        card.style.zIndex = String(zIndex);
+        card.style.opacity = String(opacity);
+        card.style.transform = `translate(${tx}px, ${ty}px) perspective(900px) rotateY(${rotateY}deg) scale(${scale})`;
+        if (image && overlay) {
+          const itemRect = card.getBoundingClientRect();
+          const glowLocal = itemRect.width > 0
+            ? Math.max(0, Math.min(1, (glowX - itemRect.left) / itemRect.width))
+            : 0;
+          const reveal = Math.round(glowLocal * 100);
+          if (reveal > 0) {
+            image.style.filter = `grayscale(${glowLocal}) contrast(${1 + 0.9 * glowLocal}) brightness(${1 + 0.05 * glowLocal})`;
+            overlay.style.setProperty("--reveal", `${reveal}%`);
+          } else {
+            image.style.filter = "";
+            overlay.style.setProperty("--reveal", "0%");
+          }
+        }
+      });
     };
-    const onWheel = (event) => {
-      event.preventDefault();
-      stateLocal.targetScroll = clamp(stateLocal.targetScroll + event.deltaY, 0, maxScroll);
+    const tick = (time) => {
+      const elapsed = Math.min(time - local.lastTime, 40);
+      local.lastTime = time;
+      if (state.animationPlaying) local.offset = (local.offset + elapsed * speed) % local.beltLength;
+      project();
+      local.frame = requestAnimationFrame(tick);
     };
-    const onTouchStart = (event) => {
-      stateLocal.touchY = event.touches[0].clientY;
-    };
-    const onTouchMove = (event) => {
-      event.preventDefault();
-      const y = event.touches[0].clientY;
-      stateLocal.targetScroll = clamp(stateLocal.targetScroll + stateLocal.touchY - y, 0, maxScroll);
-      stateLocal.touchY = y;
-    };
-    const onMouseMove = (event) => {
-      const rect = container.getBoundingClientRect();
-      const normalized = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
-      stateLocal.parallaxTarget = normalized * 100;
-    };
-
-    const timers = [];
-    if (state.animationPlaying) {
-      timers.push(window.setTimeout(() => { stateLocal.phase = "line"; }, 500));
-      timers.push(window.setTimeout(() => { stateLocal.phase = "circle"; }, 2500));
-    }
-    container.addEventListener("wheel", onWheel, { passive: false });
-    container.addEventListener("touchstart", onTouchStart, { passive: false });
-    container.addEventListener("touchmove", onTouchMove, { passive: false });
-    container.addEventListener("mousemove", onMouseMove);
-    setTargets();
-    stateLocal.frame = window.requestAnimationFrame(tick);
+    measure();
+    project();
+    local.frame = requestAnimationFrame(tick);
 
     scrollMorphCleanups.push(() => {
-      window.cancelAnimationFrame(stateLocal.frame);
-      timers.forEach((timer) => window.clearTimeout(timer));
-      container.removeEventListener("wheel", onWheel);
-      container.removeEventListener("touchstart", onTouchStart);
-      container.removeEventListener("touchmove", onTouchMove);
-      container.removeEventListener("mousemove", onMouseMove);
+      cancelAnimationFrame(local.frame);
+      if (local.measureFrame) cancelAnimationFrame(local.measureFrame);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", scheduleMeasure);
+      cards.forEach((card) => {
+        const image = $("img", card);
+        if (image) image.style.filter = "";
+      });
     });
   });
 }
@@ -7451,112 +7439,114 @@ async function buildPublishedDocument(options = {}) {
         });
       })();
       (function() {
-        function lerp(start, end, t) { return start * (1 - t) + end * t; }
-        function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
         document.querySelectorAll(".scroll-morph").forEach(function(container) {
-          var cards = Array.prototype.slice.call(container.querySelectorAll(".scroll-morph-card"));
+          var stage = container.querySelector(".scroll-morph-stage");
+          var slider = container.querySelector(".scroll-morph-slider");
+          var cards = Array.prototype.slice.call((slider || container).querySelectorAll(".scroll-morph-card"));
           if (!cards.length) return;
-          var total = cards.length;
-          var maxScroll = 3000;
-          var local = {
-            phase: "scatter",
-            scroll: 0,
-            targetScroll: 0,
-            morph: 0,
-            rotate: 0,
-            parallax: 0,
-            parallaxTarget: 0,
-            touchY: 0
+           var total = cards.length;
+           var autoPlay = ${shouldPlay ? "true" : "false"};
+           var speed = ${state.hero.speed === "fast" ? "0.21" : state.hero.speed === "slow" ? "0.06" : "0.12"};
+           var canvasAspect = ${JSON.stringify({
+             "16-9": 16 / 9,
+             "4-3": 4 / 3,
+             "1-1": 1,
+             "4-5": 4 / 5,
+             "9-16": 9 / 16
+           }[state.hero.ratio] || 16 / 9)};
+           var local = {
+             offset: 0,
+             lastTime: performance.now(),
+             frame: 0,
+             measureFrame: 0,
+             baseWidth: 320,
+             baseHeight: 568,
+             spacing: 300,
+             beltLength: total * 300
           };
-          function setTargets() {
-            var rect = container.getBoundingClientRect();
-            var width = rect.width || 1;
-            var height = rect.height || 1;
-            var minDimension = Math.min(width, height);
-            var morphTarget = clamp(local.scroll / 600, 0, 1);
-            var rotateTarget = clamp((local.scroll - 600) / (maxScroll - 600), 0, 1) * 360;
-            local.morph = lerp(local.morph, morphTarget, 0.075);
-            local.rotate = lerp(local.rotate, rotateTarget, 0.075);
-            local.parallax = lerp(local.parallax, local.parallaxTarget, 0.08);
-            container.style.setProperty("--sm-copy-opacity", clamp((local.morph - 0.8) / 0.2, 0, 1).toFixed(3));
+          function measure() {
+             var width = Math.max(container.clientWidth, 280);
+             var height = Math.max(container.clientHeight, 260);
+             var isPhone = width <= 560;
+             var logicalHeight = Math.max(height, width / canvasAspect);
+             var cardWidth = Math.max(132, Math.min(isPhone ? 210 : 320, width * (isPhone ? 0.31 : 0.22), (logicalHeight * 0.72) / (4 / 3)));
+            var cardHeight = cardWidth * (4 / 3);
+            var spacing = isPhone ? Math.max(140, cardWidth * 0.96) : Math.min(300, Math.max(190, width * 0.22));
+            container.style.setProperty("--sm-card-width", cardWidth + "px");
+            container.style.setProperty("--sm-card-height", cardHeight + "px");
+            container.style.setProperty("--sm-glow-height", (cardHeight * 0.72).toFixed(2) + "px");
+            local.spacing = spacing;
+            local.beltLength = total * spacing;
+            var first = cards[0];
+            var savedTransform = first.style.transform;
+            first.style.transform = "none";
+            if (first.offsetWidth > 0) local.baseWidth = first.offsetWidth;
+            if (first.offsetHeight > 0) local.baseHeight = first.offsetHeight;
+             first.style.transform = savedTransform;
+           }
+           function scheduleMeasure() {
+             if (local.measureFrame) window.cancelAnimationFrame(local.measureFrame);
+             local.measureFrame = window.requestAnimationFrame(function() {
+               local.measureFrame = 0;
+               measure();
+               project();
+             });
+           }
+           var resizeObserver = "ResizeObserver" in window ? new ResizeObserver(scheduleMeasure) : null;
+           if (resizeObserver) resizeObserver.observe(container);
+           window.addEventListener("resize", scheduleMeasure);
+           function project() {
+            var width = Math.max((stage && stage.clientWidth) || container.clientWidth, 280);
+            var scaleFactor = width * 0.38;
+            var maxN = width <= 560 ? 2.7 : 2;
+            var stageRect = stage && stage.getBoundingClientRect();
+            var glowX = stageRect ? stageRect.left + stageRect.width / 2 : 0;
             cards.forEach(function(card, index) {
-              var x = Number(card.dataset.scatterX || 0);
-              var y = Number(card.dataset.scatterY || 0);
-              var rotation = Number(card.dataset.scatterR || 0);
-              var scale = 0.6;
-              var opacity = 0;
-              if (local.phase === "line") {
-                var lineSpacing = Math.min(70, Math.max(42, width / Math.max(total - 1, 1)));
-                var lineTotal = (total - 1) * lineSpacing;
-                x = index * lineSpacing - lineTotal / 2;
-                y = 0;
-                rotation = 0;
-                scale = 1;
-                opacity = 1;
-              } else if (local.phase === "circle") {
-                var circleRadius = Math.min(minDimension * 0.35, 350);
-                var circleAngle = (index / total) * 360;
-                var circleRad = circleAngle * Math.PI / 180;
-                var circleX = Math.cos(circleRad) * circleRadius;
-                var circleY = Math.sin(circleRad) * circleRadius;
-                var circleRotation = circleAngle + 90;
-                var isMobile = width < 768;
-                var baseRadius = Math.min(width, height * 1.5);
-                var arcRadius = baseRadius * (isMobile ? 1.4 : 1.1);
-                var arcApexY = height * (isMobile ? 0.35 : 0.25);
-                var arcCenterY = arcApexY + arcRadius;
-                var spreadAngle = isMobile ? 100 : 130;
-                var startAngle = -90 - spreadAngle / 2;
-                var step = spreadAngle / Math.max(total - 1, 1);
-                var scrollProgress = clamp(local.rotate / 360, 0, 1);
-                var boundedRotation = -scrollProgress * spreadAngle * 0.8;
-                var currentArcAngle = startAngle + index * step + boundedRotation;
-                var arcRad = currentArcAngle * Math.PI / 180;
-                var arcX = Math.cos(arcRad) * arcRadius + local.parallax;
-                var arcY = Math.sin(arcRad) * arcRadius + arcCenterY - height * 0.5;
-                var arcRotation = currentArcAngle + 90;
-                var arcScale = isMobile ? 1.25 : 1.58;
-                x = lerp(circleX, arcX, local.morph);
-                y = lerp(circleY, arcY, local.morph);
-                rotation = lerp(circleRotation, arcRotation, local.morph);
-                scale = lerp(1, arcScale, local.morph);
-                opacity = 1;
+              var position = local.offset - index * local.spacing;
+              position = ((position + local.beltLength / 2) % local.beltLength + local.beltLength) % local.beltLength - local.beltLength / 2;
+              var n = position / scaleFactor;
+              if (Math.abs(n) > maxN) {
+                card.style.opacity = "0";
+                card.style.visibility = "hidden";
+                return;
               }
-              card.style.setProperty("--sm-x", x.toFixed(2) + "px");
-              card.style.setProperty("--sm-y", y.toFixed(2) + "px");
-              card.style.setProperty("--sm-rotate", rotation.toFixed(2) + "deg");
-              card.style.setProperty("--sm-scale", scale.toFixed(3));
-              card.style.setProperty("--sm-opacity", opacity.toFixed(3));
-              card.style.zIndex = String(Math.round(1000 + y));
+              card.style.visibility = "visible";
+              var absN = Math.abs(n);
+              var scale = 0.72 + 0.28 * absN * absN;
+              var y = 15 * absN * absN;
+              var rotateY = -n * 35;
+              var zIndex = Math.round(100 - absN * 60);
+              var opacity = absN > 1 ? Math.max(0, 1 - (absN - 1) / (maxN - 1)) : 1;
+              card.style.zIndex = String(zIndex);
+              card.style.opacity = String(opacity);
+              card.style.transform = "translate(" + (position - local.baseWidth / 2) + "px, " + (y - local.baseHeight / 2) + "px) perspective(900px) rotateY(" + rotateY + "deg) scale(" + scale + ")";
+              var image = card.querySelector("img");
+              var overlay = card.querySelector(".scroll-morph-dot-overlay");
+              if (image && overlay) {
+                var itemRect = card.getBoundingClientRect();
+                var glowLocal = itemRect.width > 0 ? Math.max(0, Math.min(1, (glowX - itemRect.left) / itemRect.width)) : 0;
+                var reveal = Math.round(glowLocal * 100);
+                if (reveal > 0) {
+                  image.style.filter = "grayscale(" + glowLocal + ") contrast(" + (1 + 0.9 * glowLocal) + ") brightness(" + (1 + 0.05 * glowLocal) + ")";
+                  overlay.style.setProperty("--reveal", reveal + "%");
+                } else {
+                  image.style.filter = "";
+                  overlay.style.setProperty("--reveal", "0%");
+                }
+              }
             });
           }
-          function tick() {
-            local.scroll = lerp(local.scroll, local.targetScroll, 0.12);
-            setTargets();
-            window.requestAnimationFrame(tick);
+          function tick(time) {
+            var elapsed = Math.min(time - local.lastTime, 40);
+            local.lastTime = time;
+            if (autoPlay) local.offset = (local.offset + elapsed * speed) % local.beltLength;
+            project();
+            local.frame = window.requestAnimationFrame(tick);
           }
-          container.addEventListener("wheel", function(event) {
-            event.preventDefault();
-            local.targetScroll = clamp(local.targetScroll + event.deltaY, 0, maxScroll);
-          }, { passive: false });
-          container.addEventListener("touchstart", function(event) {
-            local.touchY = event.touches[0].clientY;
-          }, { passive: false });
-          container.addEventListener("touchmove", function(event) {
-            event.preventDefault();
-            var y = event.touches[0].clientY;
-            local.targetScroll = clamp(local.targetScroll + local.touchY - y, 0, maxScroll);
-            local.touchY = y;
-          }, { passive: false });
-          container.addEventListener("mousemove", function(event) {
-            var rect = container.getBoundingClientRect();
-            var normalized = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * 2 - 1;
-            local.parallaxTarget = normalized * 100;
-          });
-          window.setTimeout(function() { local.phase = "line"; }, 500);
-          window.setTimeout(function() { local.phase = "circle"; }, 2500);
-          setTargets();
-          window.requestAnimationFrame(tick);
+          window.addEventListener("resize", measure);
+          measure();
+          project();
+          local.frame = window.requestAnimationFrame(tick);
         });
       })();
       (function() {
