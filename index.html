@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>四屏作品集模板编辑器</title>
-    <link rel="stylesheet" href="styles.css?v=card-totem-controls-20260717af" />
+    <link rel="stylesheet" href="styles.css?v=photo-orbit-ivory-card-style-20260720" />
     <style>
       .panel-section:has(#styleTarget) {
         display: none !important;
@@ -2308,7 +2308,7 @@ label span,
   transform-style: preserve-3d;
   user-select: none;
   border-radius: var(--media-radius, 8px);
-  cursor: grab;
+  cursor: default;
   touch-action: none;
 }
 
@@ -2346,15 +2346,12 @@ label span,
     translate3d(calc(-50% + var(--orbit-x, 0px) + var(--orbit-shift-x, 0px)), calc(-50% + var(--orbit-y, 0px) + var(--orbit-shift-y, 0px)), 0)
     scale(var(--orbit-scale, 1));
   transform-origin: center center;
-  animation: photoOrbitReveal 780ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-  animation-delay: calc(var(--i) * 70ms);
+  animation: none;
+  animation-delay: 0s;
   transition:
     filter 220ms ease;
   will-change: transform, opacity, filter;
-}
-
-.photo-orbit-card:hover {
-  z-index: 120 !important;
+  pointer-events: auto;
 }
 
 .photo-orbit-surface {
@@ -2384,12 +2381,6 @@ label span,
     linear-gradient(135deg, #3b3d3c, #171817 58%, #595955);
 }
 
-.photo-orbit-card:hover .photo-orbit-surface {
-  transform: scale(1.055) translateZ(28px);
-  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.58);
-  filter: brightness(1.04) saturate(1.04);
-}
-
 .photo-orbit-surface img {
   width: 100%;
   height: 100%;
@@ -2397,8 +2388,13 @@ label span,
   transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.photo-orbit-card:hover .photo-orbit-surface {
+  transform: scale(1.08) translateZ(18px);
+  filter: brightness(1.06) saturate(1.04);
+}
+
 .photo-orbit-card:hover img {
-  transform: scale(1.07);
+  transform: scale(1.08);
 }
 
 .photo-orbit-surface::after {
@@ -8440,6 +8436,6 @@ html.image-export *,
 </script>
 
     <script src="html2canvas.min.js"></script>
-    <script src="app.js?v=hero-export-modes-v11-orbit-smooth-20260717m"></script>
+    <script src="app.js?v=photo-orbit-ivory-card-style-20260720"></script>
   </body>
 </html>

@@ -2352,6 +2352,11 @@ function renderPhotoOrbit(items) {
         </div>`;
       }).join("")}
     </div>
+    <div class="photo-orbit-overlay" aria-hidden="true">
+      <div class="photo-orbit-expanded" role="dialog" aria-label="图片放大预览">
+        <button class="photo-orbit-close" type="button" aria-label="关闭放大预览">×</button>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -4142,13 +4147,24 @@ function initPhotoOrbits(root) {
   $$(".photo-orbit", root).forEach((orbit) => {
     const cards = $$(".photo-orbit-card", orbit);
     const duration = (parseFloat(SPEED_MAP[state.hero.speed]) || 22) * 1000;
-    const motion = { phase: 0, frame: 0, last: performance.now(), paused: !state.animationPlaying };
-    const setCardShift = (shiftX, shiftY) => {
-      cards.forEach((card) => {
-        const depth = Number(card.style.getPropertyValue("--orbit-depth") || 0.6);
-        card.style.setProperty("--orbit-shift-x", `${(shiftX * depth).toFixed(2)}px`);
-        card.style.setProperty("--orbit-shift-y", `${(shiftY * depth).toFixed(2)}px`);
-      });
+    const motion = {
+      phase: 0,
+      frame: 0,
+      last: performance.now(),
+      paused: !state.animationPlaying,
+      hoveredCard: null,
+      expandedCard: null,
+      speedScale: 1
+    };
+    const overlay = $(".photo-orbit-overlay", orbit);
+    const expanded = $(".photo-orbit-expanded", orbit);
+    const closeButton = $(".photo-orbit-close", orbit);
+    const setHoveredCard = (card) => {
+      const next = card && orbit.contains(card) ? card : null;
+      if (motion.hoveredCard === next) return;
+      motion.hoveredCard?.classList.remove("is-hovered");
+      motion.hoveredCard = next;
+      motion.hoveredCard?.classList.add("is-hovered");
     };
     const applyOrbit = () => {
       const width = orbit.clientWidth || 1;
@@ -4175,25 +4191,58 @@ function initPhotoOrbits(root) {
     const tick = (now) => {
       const delta = Math.min(48, now - motion.last);
       motion.last = now;
+      const targetSpeed = motion.expandedCard ? 0 : motion.hoveredCard ? 0.12 : 1;
+      motion.speedScale += (targetSpeed - motion.speedScale) * Math.min(1, delta / 180);
       if (!motion.paused) {
-        motion.phase += (delta / duration) * Math.PI * 2;
+        motion.phase += (delta / duration) * Math.PI * 2 * motion.speedScale;
       }
       applyOrbit();
       motion.frame = window.requestAnimationFrame(tick);
     };
-
-    const onMove = (event) => {
-      const rect = orbit.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / Math.max(rect.width, 1) - 0.5);
-      const y = ((event.clientY - rect.top) / Math.max(rect.height, 1) - 0.5);
-      orbit.style.setProperty("--orbit-tilt-x", `${(-y * 8).toFixed(2)}deg`);
-      orbit.style.setProperty("--orbit-tilt-y", `${(x * 10).toFixed(2)}deg`);
-      setCardShift(x * 14, y * 10);
+    const onCardEnter = (event) => {
+      setHoveredCard(event.currentTarget);
     };
-    const onWheel = (event) => {
-      if (!orbit.matches(":hover")) return;
+    const onCardLeave = (event) => {
+      if (motion.expandedCard === event.currentTarget) return;
+      if (motion.hoveredCard === event.currentTarget) {
+        setHoveredCard(null);
+      }
+    };
+    const closeExpanded = () => {
+      if (!overlay || !expanded) return;
+      overlay.classList.remove("is-open");
+      overlay.setAttribute("aria-hidden", "true");
+      expanded.replaceChildren();
+      motion.expandedCard = null;
+      setHoveredCard(null);
+      motion.last = performance.now();
+    };
+    const openExpanded = (card) => {
+      if (!overlay || !expanded) return;
+      const surface = $(".photo-orbit-surface", card);
+      if (!surface) return;
+      motion.expandedCard = card;
+      setHoveredCard(card);
+      const previewSurface = surface.cloneNode(true);
+      previewSurface.classList.toggle("is-placeholder", card.classList.contains("is-placeholder"));
+      expanded.replaceChildren(previewSurface, closeButton);
+      motion.speedScale = 0;
+      motion.last = performance.now();
+      overlay.classList.add("is-open");
+      overlay.setAttribute("aria-hidden", "false");
+    };
+    const onCardClick = (event) => {
       event.preventDefault();
-      motion.phase += Math.max(-1, Math.min(1, event.deltaY || event.deltaX || 0)) * -0.12;
+      event.stopPropagation();
+      openExpanded(event.currentTarget);
+    };
+    const onExpandedClick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeExpanded();
+    };
+    const onOverlayClick = (event) => {
+      if (event.target === overlay) closeExpanded();
     };
     const onKeyDown = (event) => {
       if (event.key === "ArrowRight") {
@@ -4205,24 +4254,30 @@ function initPhotoOrbits(root) {
         motion.phase -= Math.PI / cards.length;
       }
     };
-    const onLeave = () => {
-      orbit.style.setProperty("--orbit-tilt-x", "0deg");
-      orbit.style.setProperty("--orbit-tilt-y", "0deg");
-      setCardShift(0, 0);
-    };
-    orbit.addEventListener("pointermove", onMove);
-    orbit.addEventListener("pointerleave", onLeave);
-    orbit.addEventListener("wheel", onWheel, { passive: false });
+    cards.forEach((card) => {
+      card.addEventListener("pointerenter", onCardEnter);
+      card.addEventListener("pointerleave", onCardLeave);
+      card.addEventListener("click", onCardClick);
+    });
+    expanded?.addEventListener("click", onExpandedClick);
+    overlay?.addEventListener("click", onOverlayClick);
+    closeButton?.addEventListener("click", closeExpanded);
     orbit.addEventListener("keydown", onKeyDown);
-    setCardShift(0, 0);
     applyOrbit();
     motion.frame = window.requestAnimationFrame(tick);
     photoOrbitCleanups.push(() => {
       window.cancelAnimationFrame(motion.frame);
-      orbit.removeEventListener("pointermove", onMove);
-      orbit.removeEventListener("pointerleave", onLeave);
-      orbit.removeEventListener("wheel", onWheel);
+      cards.forEach((card) => {
+        card.removeEventListener("pointerenter", onCardEnter);
+        card.removeEventListener("pointerleave", onCardLeave);
+        card.removeEventListener("click", onCardClick);
+      });
+      expanded?.removeEventListener("click", onExpandedClick);
+      overlay?.removeEventListener("click", onOverlayClick);
+      closeButton?.removeEventListener("click", closeExpanded);
       orbit.removeEventListener("keydown", onKeyDown);
+      closeExpanded();
+      setHoveredCard(null);
     });
   });
 }
