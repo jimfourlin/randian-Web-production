@@ -28,15 +28,15 @@ HERO_TEMPLATES.push({
 HERO_TEMPLATES.push({
   id: "image-trail",
   name: "Image Trail",
-  slots: 10,
+  slots: 7,
   thumb: "thumb-image-trail",
-  desc: "鼠标移动时沿路径依次出现作品图，短暂停留后柔和淡出。"
+  desc: "作品图横向错落排列，沿柔和波浪节奏上下浮动。"
 });
 
 HERO_TEMPLATES.push({
   id: "three-d-carousel",
   name: "3D Carousel",
-  slots: 14,
+  slots: 8,
   thumb: "thumb-three-d-carousel",
   desc: "14 张作品图围绕圆柱排布，可拖拽旋转并点击放大查看。"
 });
@@ -52,9 +52,9 @@ HERO_TEMPLATES.push({
 HERO_TEMPLATES.push({
   id: "image-gallery",
   name: "Image Gallery",
-  slots: 14,
+  slots: 8,
   thumb: "thumb-image-gallery",
-  desc: "14 张图片沿大圆径向排布，滚轮或拖拽旋转，悬停时放大突出。"
+  desc: "8 张图片横向分步轮播，中间卡片保持最高层级。"
 });
 
 HERO_TEMPLATES.push({
@@ -70,7 +70,7 @@ HERO_TEMPLATES.push({
   name: "Ticker Loop",
   slots: 12,
   thumb: "thumb-ticker-loop",
-  desc: "12 张作品图组成三行倾斜滚动网格，悬停暂停并支持单张放大。"
+  desc: "12 张作品图组成四行倾斜滚动网格，悬停暂停并支持单张放大。"
 });
 
 HERO_TEMPLATES.push({
@@ -1381,7 +1381,7 @@ function cropAspectForTemplate(templateId = state.hero.template, slotIndex = nul
     "photo-orbit": 1,
     "scroll-morph": 3 / 4,
     "image-trail": 4 / 5,
-    "three-d-carousel": 4 / 5,
+    "three-d-carousel": 3 / 4,
     "stellar-gallery": 4 / 5,
     "masonry-gallery": 4 / 5,
     "image-gallery": 1,
@@ -2378,14 +2378,10 @@ function renderScrollMorph(items) {
 
 function renderImageTrail(items) {
   return `<div class="image-trail" tabindex="0" role="region" aria-label="Image Trail gallery">
-    <div class="image-trail-layer" aria-hidden="true"></div>
-    <div class="image-trail-sources" aria-hidden="true">
-      ${items.map((item, index) => {
-        const alt = item ? escapeHTML(item.name || `浣滃搧 ${index + 1}`) : `Slot ${index + 1}`;
-        return `<div class="image-trail-source-card ${item ? "has-media" : "is-placeholder"}" data-index="${index}">
-          ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
-        </div>`;
-      }).join("")}
+    <div class="image-trail-stage">
+      ${items.map((item, index) => `<div class="image-trail-card ${item ? "has-media" : "is-placeholder"}" data-index="${index}">
+        ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
+      </div>`).join("")}
     </div>
   </div>`;
 }
@@ -2405,7 +2401,6 @@ function renderThreeDCarousel(items) {
       </div>
     </div>
     <div class="three-d-carousel-overlay" aria-hidden="true">
-      <button class="three-d-carousel-close" type="button" aria-label="Close preview">×</button>
       <div class="three-d-carousel-expanded"></div>
     </div>
   </div>`;
@@ -2455,17 +2450,18 @@ function renderMasonryGallery(items) {
 }
 
 function renderImageGallery(items) {
-  return `<div class="image-gallery" tabindex="0" role="region" aria-label="Image Gallery radial scroll">
-    <ul class="image-gallery-wheel">
-      ${items.map((item, index) => {
+  const visibleItems = items.slice(0, 8);
+  return `<div class="image-gallery" role="region" aria-label="Image Gallery">
+    <div class="image-gallery-track">
+      ${visibleItems.map((item, index) => {
         const alt = item ? escapeHTML(item.name || `作品 ${index + 1}`) : `Slot ${index + 1}`;
-        return `<li class="image-gallery-item ${item ? "has-media" : "is-placeholder"}" data-index="${index}">
-          <button class="image-gallery-card" type="button" aria-label="View image ${index + 1}">
-            ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
-          </button>
-        </li>`;
+        return `<div class="image-gallery-item ${item ? "has-media" : "is-placeholder"}" data-index="${index}">
+          <div class="image-gallery-card">
+            ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="image-gallery-placeholder">${alt}</span>`}
+          </div>
+        </div>`;
       }).join("")}
-    </ul>
+    </div>
   </div>`;
 }
 
@@ -2486,7 +2482,12 @@ function renderPortfolioGallery(items) {
 
 function renderTickerLoop(items) {
   const baseDuration = parseFloat(SPEED_MAP[state.hero.speed]) || 22;
-  const rowDurations = [baseDuration * 1.45, baseDuration * 1.7, baseDuration * 1.28];
+  const rowDurations = [
+    baseDuration * 1.45,
+    baseDuration * 1.7,
+    baseDuration * 1.28,
+    baseDuration * 1.7
+  ];
   const rowNames = [
     ["作品 01", "作品 02", "作品 03", "作品 04"],
     ["作品 05", "作品 06", "作品 07", "作品 08"],
@@ -2524,21 +2525,21 @@ function renderTickerLoop(items) {
     }
     return `<div class="ticker-loop-art">${image}</div>`;
   };
-  const rows = [0, 1, 2].map((row) => {
-    const rowItems = items.slice(row * 4, row * 4 + 4);
-    const loopItems = [...rowItems, ...rowItems, ...rowItems, ...rowItems];
+  const rows = [0, 1, 2, 1].map((sourceRow, row) => {
+    const rowItems = items.slice(sourceRow * 4, sourceRow * 4 + 4);
+    const loopItems = [...rowItems, ...rowItems, ...rowItems];
     const cards = loopItems.map((item, loopIndex) => {
-      const slotIndex = row * 4 + (loopIndex % 4);
+      const slotIndex = sourceRow * 4 + (loopIndex % 4);
       const model = { kind: "photo", title: "", meta: "" };
       const alt = item ? escapeHTML(item.name || `作品 ${slotIndex + 1}`) : `Slot ${slotIndex + 1}`;
-      const label = rowNames[row][loopIndex % 4];
+      const label = `Slot ${slotIndex + 1}`;
       return `<div class="ticker-loop-card ticker-card-${model.kind} ${item ? "has-media" : "is-placeholder"}">
         ${renderTickerArt(item, slotIndex, model)}
-        <span class="ticker-loop-label">${escapeHTML(model.title)}</span>
+        <span class="ticker-loop-label">${escapeHTML(label)}</span>
         ${model.meta ? `<span class="ticker-loop-meta">${escapeHTML(model.meta).replace(/\|/g, "<br>")}</span>` : ""}
       </div>`;
     }).join("");
-    return `<div class="ticker-loop-row" style="--ticker-duration:${rowDurations[row].toFixed(2)}s;--ticker-direction:${row === 1 ? "normal" : "reverse"}">${cards}</div>`;
+    return `<div class="ticker-loop-row" style="--ticker-duration:${rowDurations[row].toFixed(2)}s;--ticker-direction:${row % 2 === 1 ? "normal" : "reverse"}">${cards}</div>`;
   }).join("");
 
   return `<div class="ticker-loop" tabindex="0" role="region" aria-label="Ticker Loop gallery">
@@ -4418,59 +4419,53 @@ function cleanupScrollMorphs() {
 
 function initImageTrails(root) {
   $$(".image-trail", root).forEach((container) => {
-    const layer = $(".image-trail-layer", container);
-    const sources = $$(".image-trail-source-card", container);
-    if (!layer || !sources.length) return;
+    const stage = $(".image-trail-stage", container);
+    const cards = $$(".image-trail-card", stage || container);
+    if (!stage || !cards.length) return;
 
-    const interval = state.hero.speed === "fast" ? 56 : state.hero.speed === "slow" ? 130 : 82;
-    const lifetime = state.hero.speed === "fast" ? 920 : state.hero.speed === "slow" ? 1320 : 1080;
-    const motion = {
-      lastSpawn: 0,
-      lastX: -9999,
-      lastY: -9999,
-      index: 0,
-      z: 1
+    const waveDuration = state.hero.speed === "fast" ? 6 : state.hero.speed === "slow" ? 12 : 9;
+    const local = { measureFrame: 0 };
+    const measure = () => {
+      const width = Math.max(stage.clientWidth, 280);
+      const height = Math.max(stage.clientHeight, 260);
+      const isPhone = width <= 560;
+      const cardWidth = Math.max(82, Math.min(
+        isPhone ? 156 : 220,
+        width * (isPhone ? 0.3 : 0.16),
+        height * 0.34
+      ));
+      const cardHeight = cardWidth * 1.5;
+      const gap = cardWidth * (isPhone ? 0.9 : 1.02);
+      const waveOffsets = [0, 0.38, 0, -0.38, 0, 0.38, 0];
+      stage.style.setProperty("--it-card-width", `${cardWidth}px`);
+      stage.style.setProperty("--it-card-height", `${cardHeight}px`);
+      stage.style.setProperty("--it-wave-duration", `${waveDuration}s`);
+      cards.forEach((card, index) => {
+        const distance = index - (cards.length - 1) / 2;
+        const y = waveOffsets[index] * cardHeight;
+        card.style.setProperty("--it-x", `${distance * gap}px`);
+        card.style.setProperty("--it-y", `${y}px`);
+        card.style.setProperty("--it-rotate", "0deg");
+        card.style.setProperty("--it-scale", "1");
+        card.style.setProperty("--it-wave-delay", `${-(index * waveDuration / Math.max(cards.length - 1, 1))}s`);
+      });
     };
-
-    const spawn = (x, y, force = false) => {
-      const now = performance.now();
-      const moved = Math.hypot(x - motion.lastX, y - motion.lastY);
-      if (!force && (now - motion.lastSpawn < interval || moved < 12)) return;
-      motion.lastSpawn = now;
-      motion.lastX = x;
-      motion.lastY = y;
-
-      const source = sources[motion.index % sources.length];
-      motion.index += 1;
-      const item = document.createElement("div");
-      item.className = "image-trail-item";
-      item.style.left = `${x}px`;
-      item.style.top = `${y}px`;
-      item.style.zIndex = String(motion.z++);
-      item.style.setProperty("--trail-rotate", `${((Math.random() - 0.5) * 18).toFixed(2)}deg`);
-      item.style.setProperty("--trail-duration", `${lifetime}ms`);
-      item.appendChild(source.cloneNode(true));
-      layer.appendChild(item);
-      window.setTimeout(() => item.remove(), lifetime + 80);
+    const scheduleMeasure = () => {
+      if (local.measureFrame) cancelAnimationFrame(local.measureFrame);
+      local.measureFrame = requestAnimationFrame(() => {
+        local.measureFrame = 0;
+        measure();
+      });
     };
-
-    const onPointerMove = (event) => {
-      const rect = container.getBoundingClientRect();
-      spawn(event.clientX - rect.left, event.clientY - rect.top);
-    };
-
-    const onPointerEnter = (event) => {
-      const rect = container.getBoundingClientRect();
-      spawn(event.clientX - rect.left, event.clientY - rect.top, true);
-    };
-
-    container.addEventListener("pointerenter", onPointerEnter);
-    container.addEventListener("pointermove", onPointerMove);
+    const resizeObserver = "ResizeObserver" in window ? new ResizeObserver(scheduleMeasure) : null;
+    resizeObserver?.observe(stage);
+    window.addEventListener("resize", scheduleMeasure);
+    measure();
 
     imageTrailCleanups.push(() => {
-      container.removeEventListener("pointerenter", onPointerEnter);
-      container.removeEventListener("pointermove", onPointerMove);
-      layer.innerHTML = "";
+      if (local.measureFrame) cancelAnimationFrame(local.measureFrame);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", scheduleMeasure);
     });
   });
 }
@@ -4489,7 +4484,7 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
     const close = $(".three-d-carousel-close", container);
     if (!ring || !cards.length) return;
 
-    const speed = state.hero.speed === "fast" ? 0.038 : state.hero.speed === "slow" ? 0.012 : 0.022;
+    const speed = state.hero.speed === "fast" ? 0.024 : state.hero.speed === "slow" ? 0.008 : 0.014;
     const motion = {
       rotation: 0,
       targetRotation: 0,
@@ -4499,16 +4494,23 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
       moved: false,
       startX: 0,
       startRotation: 0,
-      active: true
+      active: true,
+      hovered: false,
+      pressedCard: null,
+      pressedClose: null,
+      pressedExpanded: null,
+      pointerHandled: false
     };
 
     const layout = () => {
       const width = container.clientWidth || 1;
       const height = container.clientHeight || 1;
       const count = cards.length;
-      const cardSize = Math.max(82, Math.min(156, width * 0.16, height * 0.34));
-      const radius = Math.max(cardSize * 1.65, (cardSize * count) / (Math.PI * 2));
-      ring.style.setProperty("--carousel-card-size", `${cardSize}px`);
+      const cardWidth = Math.max(96, Math.min(220, width * 0.21, height * 0.38));
+      const cardHeight = cardWidth * (4 / 3);
+      const radius = Math.max(cardWidth * 2.3, (cardWidth * count) / (Math.PI * 2.35));
+      ring.style.setProperty("--carousel-card-width", `${cardWidth}px`);
+      ring.style.setProperty("--carousel-card-height", `${cardHeight}px`);
       ring.style.setProperty("--carousel-radius", `${radius}px`);
       cards.forEach((card, index) => {
         const angle = (360 / count) * index;
@@ -4524,7 +4526,8 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
       const delta = Math.min(48, now - motion.last);
       motion.last = now;
       if (autoPlay && !motion.dragging && motion.active) {
-        motion.targetRotation -= delta * speed;
+        const currentSpeed = motion.hovered ? speed * 0.22 : speed;
+        motion.targetRotation -= delta * currentSpeed;
       }
       motion.rotation += (motion.targetRotation - motion.rotation) * 0.12;
       apply();
@@ -4551,6 +4554,10 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
     };
 
     const onPointerDown = (event) => {
+      motion.pressedCard = event.target.closest?.(".three-d-carousel-card") || null;
+      motion.pressedClose = event.target.closest?.(".three-d-carousel-close") || null;
+      motion.pressedExpanded = event.target.closest?.(".three-d-carousel-expanded") || null;
+      motion.pointerHandled = false;
       motion.dragging = true;
       motion.moved = false;
       motion.startX = event.clientX;
@@ -4563,10 +4570,30 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
       if (Math.abs(event.clientX - motion.startX) > 4) motion.moved = true;
       motion.targetRotation = motion.startRotation + (event.clientX - motion.startX) * 0.18;
     };
-    const onPointerUp = () => {
+    const onPointerUp = (event) => {
+      const pressedCard = motion.pressedCard;
+      const pressedClose = motion.pressedClose;
+      const pressedExpanded = motion.pressedExpanded;
+      const wasMoved = motion.moved;
       motion.dragging = false;
       container.classList.remove("is-dragging");
-      window.setTimeout(() => { motion.moved = false; }, 80);
+      motion.pressedCard = null;
+      motion.pressedClose = null;
+      motion.pressedExpanded = null;
+      if (event.type === "pointerup" && pressedExpanded && !wasMoved) {
+        motion.pointerHandled = true;
+        closeOverlay();
+      } else if (event.type === "pointerup" && pressedClose && !wasMoved) {
+        motion.pointerHandled = true;
+        closeOverlay();
+      } else if (event.type === "pointerup" && pressedCard && !wasMoved) {
+        motion.pointerHandled = true;
+        openCard(pressedCard);
+      }
+      window.setTimeout(() => {
+        motion.moved = false;
+        motion.pointerHandled = false;
+      }, 80);
     };
     const onWheel = (event) => {
       event.preventDefault();
@@ -4584,8 +4611,17 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
       if (event.key === "Escape") closeOverlay();
     };
 
+    const onCardEnter = () => { motion.hovered = true; };
+    const onCardLeave = () => { motion.hovered = false; };
+
     cards.forEach((card) => {
+      card.addEventListener("pointerenter", onCardEnter);
+      card.addEventListener("pointerleave", onCardLeave);
       card.addEventListener("click", () => {
+        if (motion.pointerHandled) {
+          motion.pointerHandled = false;
+          return;
+        }
         if (motion.dragging || motion.moved) return;
         openCard(card);
       });
@@ -4609,6 +4645,10 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
     threeDCarouselCleanups.push(() => {
       window.cancelAnimationFrame(motion.frame);
       close?.removeEventListener("click", closeOverlay);
+      cards.forEach((card) => {
+        card.removeEventListener("pointerenter", onCardEnter);
+        card.removeEventListener("pointerleave", onCardLeave);
+      });
       container.removeEventListener("pointerdown", onPointerDown);
       container.removeEventListener("pointermove", onPointerMove);
       container.removeEventListener("pointerup", onPointerUp);
@@ -4655,15 +4695,16 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
       moved: false,
       startX: 0,
       startY: 0,
-      startRotX: 0,
-      startRotY: 0,
+      lastPointerX: 0,
+      lastPointerY: 0,
+      releaseTracking: false,
       active: true
     };
 
     const points = cards.map((card, index) => {
       const count = Math.max(cards.length, 1);
       if (index === 0) {
-        return { card, x: 0, y: 0, z: 1, view: null };
+        return { card, x: 0, y: 0, z: 1, view: null, depthHidden: false, occluded: false };
       }
       const spreadCount = Math.max(count - 1, 1);
       const spreadIndex = index - 1;
@@ -4685,7 +4726,9 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
         x,
         y: py,
         z,
-        view: null
+        view: null,
+        depthHidden: false,
+        occluded: false
       };
     });
     const hoverHandlers = cards.map((card) => {
@@ -4706,6 +4749,7 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
     });
 
     const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const snapCardWidth = (value) => Math.max(1, value);
 
     const syncZoomingState = () => {
       const isZooming = cards.some((card) => Number(card.dataset.zoom || 1) > 1.001 || Number(card.dataset.zoomCurrent || 1) > 1.001);
@@ -4725,7 +4769,7 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
       const width = container.clientWidth || 1;
       const height = container.clientHeight || 1;
       const shortSide = Math.min(width, height);
-      const cardWidth = clamp(shortSide * 0.168, 70, 142);
+      const cardWidth = Math.max(1, Math.round(clamp(shortSide * 0.168, 70, 142)));
       const radiusX = clamp(width * 0.31, cardWidth * 2.85, width * 0.42);
       const radiusY = clamp(height * 0.37, cardWidth * 2.05, height * 0.46);
       const radiusZ = Math.min(radiusX, radiusY) * 0.92;
@@ -4749,9 +4793,9 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
         const x = x1 * radiusX * perspectiveScale * cameraScale;
         const y = y1 * radiusY * perspectiveScale * cameraScale;
         const z = z2 * radiusZ * 0.52;
-        const scale = clamp((0.62 + depth * 0.36) * perspectiveScale * motion.zoom, 0.5, 1.18);
-        const opacity = clamp(0.34 + depth * 0.66, 0.34, 1);
-        const blur = clamp((1 - depth) * 1.25, 0, 1.1);
+        const scale = clamp((0.62 + depth * 0.36) * perspectiveScale * motion.zoom, 0.68, 1.18);
+        const opacity = clamp(0.28 + depth * 0.72, 0.28, 1);
+        const blur = 0;
         const brightness = clamp(0.56 + depth * 0.52, 0.56, 1.08);
         const tiltY = clamp(-x1 * 10, -11, 11);
         const tiltX = clamp(y1 * 7, -8, 8);
@@ -4777,20 +4821,24 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
         const displayTiltY = zoomed ? tiltY * (1 - zoomProgress * 0.35) : tiltY;
         const displayTiltX = zoomed ? tiltX * (1 - zoomProgress * 0.35) : tiltX;
         const renderScale = zoomed ? 1 + zoomProgress * 1.75 : 1;
-        const renderWidth = cardWidth * renderScale;
-        const displayScale = scale;
-        const hiddenBackLayer = !zoomed && !anyZooming && depth < 0.36;
+        const renderWidth = Math.max(1, cardWidth * scale * renderScale);
+        const renderHeight = Math.max(1, renderWidth * 1.25);
+        const displayScale = 1;
+        const hideDepth = point.depthHidden ? 0.50 : 0.42;
+        const depthHidden = !zoomed && !anyZooming && depth < hideDepth;
+        point.depthHidden = depthHidden;
 
         return {
           point,
           renderWidth,
+          renderHeight,
           displayX,
           displayY,
           displayZ,
           displayTiltY,
           displayTiltX,
           displayScale,
-          hiddenBackLayer,
+          hiddenBackLayer: depthHidden,
           zoomed,
           opacity,
           brightness,
@@ -4800,8 +4848,8 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
       });
       const margin = clamp(cardWidth * 0.14, 10, 18);
       projected.forEach((item) => {
-        item.boxW = item.renderWidth * item.displayScale * 1.1;
-        item.boxH = item.boxW * 1.25;
+        item.boxW = item.renderWidth;
+        item.boxH = item.renderHeight;
         item.targetX = item.zoomed ? item.displayX : item.displayX;
         item.targetY = item.zoomed ? item.displayY : item.displayY;
         if (!item.zoomed) {
@@ -4812,27 +4860,39 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
         }
       });
 
-      const keptVisible = [];
-      const maxVisible = width < 700 || height < 430 ? 9 : 11;
-      projected
-        .filter((item) => !item.zoomed)
-        .sort((a, b) => b.depth - a.depth)
-        .forEach((item) => {
-          if (!anyZooming && keptVisible.length >= maxVisible) {
-            item.hiddenBackLayer = true;
-            return;
-          }
-          const collides = keptVisible.some((kept) => {
-            const overlapX = (item.boxW + kept.boxW) * 0.5 + margin - Math.abs(item.targetX - kept.targetX);
-            const overlapY = (item.boxH + kept.boxH) * 0.5 + margin - Math.abs(item.targetY - kept.targetY);
-            return overlapX > 0 && overlapY > 0;
-          });
-          if (collides) {
-            item.hiddenBackLayer = true;
-          } else {
-            keptVisible.push(item);
-          }
+      if (anyZooming) {
+        projected.forEach((item) => {
+          item.point.occluded = false;
         });
+      } else {
+        const keptVisible = [];
+        const renderedBox = (item) => {
+          const view = item.point.view;
+          if (view?.ready) {
+            return { x: view.x, y: view.y, w: view.renderWidth, h: view.renderHeight };
+          }
+          return { x: item.targetX, y: item.targetY, w: item.boxW, h: item.boxH };
+        };
+        const overlaps = (candidate, kept, extraMargin) => {
+          const candidateBox = renderedBox(candidate);
+          const keptBox = renderedBox(kept);
+          const overlapX = (candidateBox.w + keptBox.w) * 0.5 + extraMargin - Math.abs(candidateBox.x - keptBox.x);
+          const overlapY = (candidateBox.h + keptBox.h) * 0.5 + extraMargin - Math.abs(candidateBox.y - keptBox.y);
+          return overlapX > 0 && overlapY > 0;
+        };
+        projected
+          .filter((item) => !item.zoomed)
+          .sort((a, b) => b.depth - a.depth)
+          .forEach((item) => {
+            const wasOccluded = item.point.occluded;
+            const collides = keptVisible.some((kept) => overlaps(item, kept, margin));
+            const remainsOccluded = wasOccluded && keptVisible.some((kept) => overlaps(item, kept, margin * 1.35));
+            const occluded = collides || remainsOccluded;
+            item.point.occluded = occluded;
+            item.hiddenBackLayer = item.hiddenBackLayer || occluded;
+            if (!item.hiddenBackLayer) keptVisible.push(item);
+          });
+      }
 
       projected.forEach((item) => {
         const target = {
@@ -4843,15 +4903,24 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
           tiltY: item.displayTiltY,
           scale: item.displayScale,
           renderWidth: item.renderWidth,
+          renderHeight: item.renderHeight,
           opacity: item.hiddenBackLayer ? 0 : item.zoomed ? 1 : item.opacity,
           brightness: item.brightness,
           blur: item.blur,
           depth: item.depth
         };
         const view = item.point.view || {};
-        const ease = !view.ready ? 1 : item.zoomed ? 0.22 : motion.dragging ? 0.24 : 0.18;
-        const mix = (key) => {
-          view[key] = view.ready ? view[key] + (target[key] - view[key]) * ease : target[key];
+        const directlyManipulated = motion.dragging || motion.releaseTracking;
+        const ease = !view.ready ? 1 : item.zoomed ? 0.22 : directlyManipulated ? 0.24 : 0.18;
+        const sizeEase = !view.ready ? 1 : item.zoomed ? 0.16 : directlyManipulated ? 0.16 : 0.08;
+        const mix = (key, factor = ease) => {
+          const delta = target[key] - view[key];
+          const threshold = key === "x" || key === "y" || key === "z" ? 0.02 : 0.0015;
+          view[key] = !view.ready ? target[key] : Math.abs(delta) < threshold ? target[key] : view[key] + delta * factor;
+        };
+        const mixSize = (key) => {
+          const delta = target[key] - view[key];
+          view[key] = !view.ready ? target[key] : Math.abs(delta) < 0.35 ? target[key] : view[key] + delta * sizeEase;
         };
         mix("x");
         mix("y");
@@ -4859,18 +4928,25 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
         mix("tiltX");
         mix("tiltY");
         mix("scale");
-        mix("renderWidth");
-        mix("opacity");
+        mixSize("renderWidth");
+        mixSize("renderHeight");
+        mix("opacity", item.hiddenBackLayer ? 0.22 : directlyManipulated ? 0.12 : 0.1);
         mix("brightness");
         mix("blur");
         mix("depth");
         view.ready = true;
         item.point.view = view;
-        item.point.card.style.setProperty("--stellar-card-render-w", `${view.renderWidth.toFixed(2)}px`);
-        item.point.card.style.transform = `translate3d(calc(-50% + ${view.x.toFixed(2)}px), calc(-50% + ${view.y.toFixed(2)}px), ${view.z.toFixed(2)}px) rotateY(${view.tiltY.toFixed(2)}deg) rotateX(${view.tiltX.toFixed(2)}deg) scale(${view.scale.toFixed(3)})`;
+        const renderWidth = Math.max(1, view.renderWidth);
+        const renderHeight = Math.max(1, view.renderHeight);
+        item.point.card.style.setProperty("--stellar-card-render-w", `${renderWidth.toFixed(2)}px`);
+        item.point.card.style.setProperty("--stellar-card-render-h", `${renderHeight.toFixed(2)}px`);
+        item.point.card.style.setProperty("--stellar-card-content-scale", (renderWidth / cardWidth).toFixed(4));
+        item.point.card.style.left = `calc(50% + ${(view.x - renderWidth * 0.5).toFixed(2)}px)`;
+        item.point.card.style.top = `calc(50% + ${(view.y - renderHeight * 0.5).toFixed(2)}px)`;
+        item.point.card.style.transform = "none";
         item.point.card.style.opacity = view.opacity.toFixed(3);
         item.point.card.style.pointerEvents = item.hiddenBackLayer ? "none" : "auto";
-        item.point.card.style.filter = item.zoomed ? "none" : `brightness(${view.brightness.toFixed(3)}) blur(${view.blur.toFixed(2)}px)`;
+        item.point.card.style.filter = "none";
         item.point.card.style.zIndex = item.zoomed ? "9000" : String(100 + Math.round(view.depth * 1400));
       });
       container.classList.toggle("is-card-zooming", anyZooming);
@@ -4919,9 +4995,20 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
     const tick = (now) => {
       const delta = Math.min(48, now - motion.last);
       motion.last = now;
-      motion.rotX += (motion.targetX - motion.rotX) * 0.11;
-      motion.rotY += (motion.targetY - motion.rotY) * 0.11;
-      motion.zoom += (motion.targetZoom - motion.zoom) * 0.13;
+      const directlyManipulated = motion.dragging || motion.releaseTracking;
+      const rotationEase = 1 - Math.exp(-delta * (directlyManipulated ? 8.2 : 6.5) / 1000);
+      const zoomEase = 1 - Math.exp(-delta * 8 / 1000);
+      motion.rotX += (motion.targetX - motion.rotX) * rotationEase;
+      motion.rotY += (motion.targetY - motion.rotY) * rotationEase;
+      if (motion.releaseTracking && Math.abs(motion.targetX - motion.rotX) < 0.0015 && Math.abs(motion.targetY - motion.rotY) < 0.0015) {
+        motion.rotX = motion.targetX;
+        motion.rotY = motion.targetY;
+        motion.releaseTracking = false;
+      }
+      motion.zoom += (motion.targetZoom - motion.zoom) * zoomEase;
+      if (Math.abs(motion.targetX - motion.rotX) < 0.0015) motion.rotX = motion.targetX;
+      if (Math.abs(motion.targetY - motion.rotY) < 0.0015) motion.rotY = motion.targetY;
+      if (Math.abs(motion.targetZoom - motion.zoom) < 0.0015) motion.zoom = motion.targetZoom;
       project();
       motion.frame = window.requestAnimationFrame(tick);
     };
@@ -4931,21 +5018,27 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
       motion.moved = false;
       motion.startX = event.clientX;
       motion.startY = event.clientY;
-      motion.startRotX = motion.targetX;
-      motion.startRotY = motion.targetY;
+      motion.lastPointerX = event.clientX;
+      motion.lastPointerY = event.clientY;
+      motion.releaseTracking = false;
       container.classList.add("is-dragging");
       container.setPointerCapture?.(event.pointerId);
     };
     const onPointerMove = (event) => {
       if (!motion.dragging) return;
-      const dx = event.clientX - motion.startX;
-      const dy = event.clientY - motion.startY;
-      if (Math.sqrt(dx * dx + dy * dy) > 10) motion.moved = true;
-      motion.targetY = motion.startRotY + dx * 0.0075;
-      motion.targetX = motion.startRotX - dy * 0.0062;
+      const totalDx = event.clientX - motion.startX;
+      const totalDy = event.clientY - motion.startY;
+      if (Math.sqrt(totalDx * totalDx + totalDy * totalDy) > 10) motion.moved = true;
+      const dx = clamp(event.clientX - motion.lastPointerX, -32, 32);
+      const dy = clamp(event.clientY - motion.lastPointerY, -32, 32);
+      motion.lastPointerX = event.clientX;
+      motion.lastPointerY = event.clientY;
+      motion.targetY += dx * 0.0044;
+      motion.targetX -= dy * 0.0038;
     };
     const onPointerUp = () => {
       motion.dragging = false;
+      motion.releaseTracking = true;
       container.classList.remove("is-dragging");
       window.setTimeout(() => { motion.moved = false; }, 90);
     };
@@ -5089,7 +5182,7 @@ function cleanupMasonryGalleries() {
   masonryGalleryCleanups = [];
 }
 
-function initImageGalleries(root, { autoPlay = true } = {}) {
+function initLegacyImageGalleries(root, { autoPlay = true } = {}) {
   $$(".image-gallery", root).forEach((gallery) => {
     const items = $$(".image-gallery-item", gallery);
     if (!items.length) return;
@@ -5216,6 +5309,87 @@ function initImageGalleries(root, { autoPlay = true } = {}) {
       gallery.removeEventListener("wheel", onWheel);
       gallery.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("resize", layout);
+    });
+  });
+}
+
+function initImageGalleries(root) {
+  $$(".image-gallery", root).forEach((gallery) => {
+    const items = $$(".image-gallery-item", gallery);
+    if (!items.length) return;
+    const positions = items.map((_, index) => index - 1);
+    const moveDuration = 760;
+    const pauseDuration = 1500;
+    let moveTimer = 0;
+    let resetTimer = 0;
+    let moving = false;
+
+    const layout = () => {
+      const width = gallery.clientWidth || 1;
+      const height = gallery.clientHeight || 1;
+      const count = Math.min(items.length, 8);
+      const cardWidth = Math.max(120, Math.min(220, width * 0.21, height * 0.4));
+      const cardHeight = cardWidth * (4 / 3);
+      const step = Math.min(cardWidth * 0.82, width * 0.155);
+      const offsets = [-3, -2, -1, 0, 1, 2, 3];
+      const scales = [0.72, 0.86, 0.96, 1.24, 0.96, 0.86, 0.72];
+      const yOffsets = [0, 0, 0, 0, 0, 0, 0];
+      const rotations = [0, 0, 0, 0, 0, 0, 0];
+
+      gallery.style.setProperty("--ig-card-w", `${cardWidth.toFixed(2)}px`);
+      gallery.style.setProperty("--ig-card-h", `${cardHeight.toFixed(2)}px`);
+      items.forEach((item, index) => {
+        const position = positions[index];
+        const visible = index < count && position >= 0 && position <= 6;
+        const visiblePosition = Math.min(Math.max(position, 0), 6);
+        const xPosition = position < 0 ? -4 : position > 6 ? 4 : position - 3;
+        item.style.setProperty("--ig-x", `${(xPosition * step).toFixed(2)}px`);
+        item.style.setProperty("--ig-y", `${yOffsets[visiblePosition]}px`);
+        item.style.setProperty("--ig-rotate", `${rotations[visiblePosition]}deg`);
+        item.style.setProperty("--ig-scale", scales[visiblePosition].toFixed(3));
+        item.style.setProperty("--ig-opacity", visible && position <= 6 ? "1" : "0");
+        const layer = 20 - Math.abs(visiblePosition - 3);
+        item.style.zIndex = String(layer);
+        item.style.setProperty("--ig-z", String(layer));
+        item.style.pointerEvents = visible ? "auto" : "none";
+      });
+    };
+
+    const advance = () => {
+      if (moving || items.length < 2) return;
+      moving = true;
+      positions.forEach((position, index) => { positions[index] = position + 1; });
+      layout();
+      resetTimer = window.setTimeout(() => {
+        const wrappedIndex = positions.indexOf(7);
+        if (wrappedIndex < 0) {
+          moving = false;
+          return;
+        }
+        positions[wrappedIndex] = -1;
+        const wrappedItem = items[wrappedIndex];
+        wrappedItem.style.transition = "none";
+        layout();
+        requestAnimationFrame(() => {
+          wrappedItem.style.transition = "";
+          moving = false;
+        });
+      }, moveDuration);
+    };
+
+    const scheduleLayout = () => window.requestAnimationFrame(layout);
+    const resizeObserver = "ResizeObserver" in window ? new ResizeObserver(scheduleLayout) : null;
+    resizeObserver?.observe(gallery);
+    window.addEventListener("resize", scheduleLayout);
+    layout();
+    requestAnimationFrame(() => gallery.classList.add("is-ready"));
+    moveTimer = window.setInterval(advance, pauseDuration + moveDuration);
+
+    imageGalleryCleanups.push(() => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", scheduleLayout);
+      window.clearInterval(moveTimer);
+      window.clearTimeout(resetTimer);
     });
   });
 }
@@ -5912,7 +6086,7 @@ async function drawExportHeroLiveLayout(ctx, y, width, height, palette) {
     ".zoom-parallax-layer",
     ".photo-orbit-surface",
     ".scroll-morph-front",
-    ".image-trail-source-card",
+    ".image-trail-card",
     ".three-d-carousel-surface",
     ".stellar-card-surface",
     ".masonry-gallery-card",
@@ -6036,42 +6210,6 @@ function prepareExportHeroCapture(root) {
       card.style.opacity = "1";
       card.style.transform = "translateY(0) scale(1)";
       card.style.filter = "blur(0) brightness(1)";
-    });
-  }
-  if (state.hero.template === "image-trail") {
-    const layer = $(".image-trail-layer", root);
-    const sources = $$(".image-trail-source-card", root);
-    if (!layer || !sources.length) return;
-    const points = [
-      [18, 70, -8],
-      [28, 57, 5],
-      [39, 48, -4],
-      [50, 43, 3],
-      [61, 47, -6],
-      [72, 56, 6],
-      [82, 68, -5],
-      [66, 34, 4],
-      [34, 34, -3],
-      [50, 62, 2]
-    ];
-    points.forEach(([left, top, rotate], index) => {
-      const source = sources[index % sources.length].cloneNode(true);
-      const item = document.createElement("div");
-      item.className = "image-trail-item export-trail-item";
-      item.style.cssText = `
-        position:absolute;
-        left:${left}%;
-        top:${top}%;
-        width:clamp(118px, 15vw, 190px);
-        aspect-ratio:1.56 / 1;
-        opacity:${index < 2 || index > 7 ? 0.62 : 1};
-        transform:translate(-50%, -50%) rotate(${rotate}deg) scale(${index === 4 ? 1.08 : 1});
-        animation:none;
-        filter:brightness(${index === 4 ? 1.04 : 0.92});
-        z-index:${20 + index};
-      `;
-      item.appendChild(source);
-      layer.appendChild(item);
     });
   }
 }
@@ -6833,18 +6971,19 @@ async function buildPublishedDocument(options = {}) {
           var cards = Array.prototype.slice.call(container.querySelectorAll(".three-d-carousel-card"));
           var overlay = container.querySelector(".three-d-carousel-overlay");
           var expanded = container.querySelector(".three-d-carousel-expanded");
-          var close = container.querySelector(".three-d-carousel-close");
           if (!ring || !cards.length) return;
-          var speed = ${state.hero.speed === "fast" ? "0.038" : state.hero.speed === "slow" ? "0.012" : "0.022"};
+          var speed = ${state.hero.speed === "fast" ? "0.024" : state.hero.speed === "slow" ? "0.008" : "0.014"};
           var autoPlay = ${shouldPlay ? "true" : "false"};
-          var motion = { rotation: 0, targetRotation: 0, frame: 0, last: performance.now(), dragging: false, moved: false, startX: 0, startRotation: 0, active: true };
+          var motion = { rotation: 0, targetRotation: 0, frame: 0, last: performance.now(), dragging: false, moved: false, startX: 0, startRotation: 0, active: true, hovered: false, pressedCard: null, pressedClose: null, pressedExpanded: null, pointerHandled: false };
           function layout() {
             var width = container.clientWidth || 1;
             var height = container.clientHeight || 1;
             var count = cards.length;
-            var cardSize = Math.max(82, Math.min(156, width * 0.16, height * 0.34));
-            var radius = Math.max(cardSize * 1.65, (cardSize * count) / (Math.PI * 2));
-            ring.style.setProperty("--carousel-card-size", cardSize + "px");
+            var cardWidth = Math.max(96, Math.min(220, width * 0.21, height * 0.38));
+            var cardHeight = cardWidth * (4 / 3);
+            var radius = Math.max(cardWidth * 2.3, (cardWidth * count) / (Math.PI * 2.35));
+            ring.style.setProperty("--carousel-card-width", cardWidth + "px");
+            ring.style.setProperty("--carousel-card-height", cardHeight + "px");
             ring.style.setProperty("--carousel-radius", radius + "px");
             cards.forEach(function(card, index) {
               var angle = (360 / count) * index;
@@ -6857,7 +6996,7 @@ async function buildPublishedDocument(options = {}) {
           function tick(now) {
             var delta = Math.min(48, now - motion.last);
             motion.last = now;
-            if (autoPlay && !motion.dragging && motion.active) motion.targetRotation -= delta * speed;
+            if (autoPlay && !motion.dragging && motion.active) motion.targetRotation -= delta * (motion.hovered ? speed * 0.22 : speed);
             motion.rotation += (motion.targetRotation - motion.rotation) * 0.12;
             apply();
             motion.frame = window.requestAnimationFrame(tick);
@@ -6880,6 +7019,10 @@ async function buildPublishedDocument(options = {}) {
             motion.active = true;
           }
           container.addEventListener("pointerdown", function(event) {
+            motion.pressedCard = event.target.closest ? event.target.closest(".three-d-carousel-card") : null;
+            motion.pressedClose = event.target.closest ? event.target.closest(".three-d-carousel-close") : null;
+            motion.pressedExpanded = event.target.closest ? event.target.closest(".three-d-carousel-expanded") : null;
+            motion.pointerHandled = false;
             motion.dragging = true;
             motion.moved = false;
             motion.startX = event.clientX;
@@ -6892,10 +7035,30 @@ async function buildPublishedDocument(options = {}) {
             if (Math.abs(event.clientX - motion.startX) > 4) motion.moved = true;
             motion.targetRotation = motion.startRotation + (event.clientX - motion.startX) * 0.18;
           });
-          function endDrag() {
+          function endDrag(event) {
+            var pressedCard = motion.pressedCard;
+            var pressedClose = motion.pressedClose;
+            var pressedExpanded = motion.pressedExpanded;
+            var wasMoved = motion.moved;
             motion.dragging = false;
             container.classList.remove("is-dragging");
-            window.setTimeout(function() { motion.moved = false; }, 80);
+            motion.pressedCard = null;
+            motion.pressedClose = null;
+            motion.pressedExpanded = null;
+            if (event && event.type === "pointerup" && pressedExpanded && !wasMoved) {
+              motion.pointerHandled = true;
+              closeOverlay();
+            } else if (event && event.type === "pointerup" && pressedClose && !wasMoved) {
+              motion.pointerHandled = true;
+              closeOverlay();
+            } else if (event && event.type === "pointerup" && pressedCard && !wasMoved) {
+              motion.pointerHandled = true;
+              openCard(pressedCard);
+            }
+            window.setTimeout(function() {
+              motion.moved = false;
+              motion.pointerHandled = false;
+            }, 80);
           }
           container.addEventListener("pointerup", endDrag);
           container.addEventListener("pointercancel", endDrag);
@@ -6908,13 +7071,20 @@ async function buildPublishedDocument(options = {}) {
             if (event.key === "ArrowLeft") { event.preventDefault(); motion.targetRotation += 360 / cards.length; }
             if (event.key === "Escape") closeOverlay();
           });
+          function onCardEnter() { motion.hovered = true; }
+          function onCardLeave() { motion.hovered = false; }
           cards.forEach(function(card) {
+            card.addEventListener("pointerenter", onCardEnter);
+            card.addEventListener("pointerleave", onCardLeave);
             card.addEventListener("click", function() {
+              if (motion.pointerHandled) {
+                motion.pointerHandled = false;
+                return;
+              }
               if (motion.dragging || motion.moved) return;
               openCard(card);
             });
           });
-          if (close) close.addEventListener("click", closeOverlay);
           if (overlay) overlay.addEventListener("click", function(event) {
             if (event.target === overlay) closeOverlay();
           });
@@ -6926,6 +7096,7 @@ async function buildPublishedDocument(options = {}) {
       })();
       (function() {
         function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+        function snapCardWidth(value) { return Math.max(1, value); }
         document.querySelectorAll(".stellar-gallery").forEach(function(container) {
           var galaxy = container.querySelector(".stellar-galaxy");
           var cards = Array.prototype.slice.call(container.querySelectorAll(".stellar-card"));
@@ -6948,14 +7119,15 @@ async function buildPublishedDocument(options = {}) {
             moved: false,
             startX: 0,
             startY: 0,
-            startRotX: 0,
-            startRotY: 0,
+            lastPointerX: 0,
+            lastPointerY: 0,
+            releaseTracking: false,
             active: true
           };
           var points = cards.map(function(card, index) {
             var count = Math.max(cards.length, 1);
             if (index === 0) {
-              return { card: card, x: 0, y: 0, z: 1, view: null };
+              return { card: card, x: 0, y: 0, z: 1, view: null, depthHidden: false, occluded: false };
             }
             var spreadCount = Math.max(count - 1, 1);
             var spreadIndex = index - 1;
@@ -6977,7 +7149,9 @@ async function buildPublishedDocument(options = {}) {
               x: x,
               y: py,
               z: z,
-              view: null
+              view: null,
+              depthHidden: false,
+              occluded: false
             };
           });
           cards.forEach(function(card) {
@@ -7009,7 +7183,7 @@ async function buildPublishedDocument(options = {}) {
             var width = container.clientWidth || 1;
             var height = container.clientHeight || 1;
             var shortSide = Math.min(width, height);
-            var cardWidth = clamp(shortSide * 0.168, 70, 142);
+            var cardWidth = Math.max(1, Math.round(clamp(shortSide * 0.168, 70, 142)));
             var radiusX = clamp(width * 0.31, cardWidth * 2.85, width * 0.42);
             var radiusY = clamp(height * 0.37, cardWidth * 2.05, height * 0.46);
             var radiusZ = Math.min(radiusX, radiusY) * 0.92;
@@ -7031,9 +7205,9 @@ async function buildPublishedDocument(options = {}) {
               var x = x1 * radiusX * perspectiveScale * cameraScale;
               var y = y1 * radiusY * perspectiveScale * cameraScale;
               var z = z2 * radiusZ * 0.52;
-              var scale = clamp((0.62 + depth * 0.36) * perspectiveScale * motion.zoom, 0.5, 1.18);
-              var opacity = clamp(0.34 + depth * 0.66, 0.34, 1);
-              var blur = clamp((1 - depth) * 1.25, 0, 1.1);
+              var scale = clamp((0.62 + depth * 0.36) * perspectiveScale * motion.zoom, 0.68, 1.18);
+              var opacity = clamp(0.28 + depth * 0.72, 0.28, 1);
+              var blur = 0;
               var brightness = clamp(0.56 + depth * 0.52, 0.56, 1.08);
               var tiltY = clamp(-x1 * 10, -11, 11);
               var tiltX = clamp(y1 * 7, -8, 8);
@@ -7058,19 +7232,23 @@ async function buildPublishedDocument(options = {}) {
               var displayTiltY = zoomed ? tiltY * (1 - zoomProgress * 0.35) : tiltY;
               var displayTiltX = zoomed ? tiltX * (1 - zoomProgress * 0.35) : tiltX;
               var renderScale = zoomed ? 1 + zoomProgress * 1.75 : 1;
-              var renderWidth = cardWidth * renderScale;
-              var displayScale = scale;
-              var hiddenBackLayer = !zoomed && !anyZooming && depth < 0.36;
+              var renderWidth = Math.max(1, cardWidth * scale * renderScale);
+              var renderHeight = Math.max(1, renderWidth * 1.25);
+              var displayScale = 1;
+              var hideDepth = point.depthHidden ? 0.50 : 0.42;
+              var depthHidden = !zoomed && !anyZooming && depth < hideDepth;
+              point.depthHidden = depthHidden;
               return {
                 point: point,
                 renderWidth: renderWidth,
+                renderHeight: renderHeight,
                 displayX: displayX,
                 displayY: displayY,
                 displayZ: displayZ,
                 displayTiltY: displayTiltY,
                 displayTiltX: displayTiltX,
                 displayScale: displayScale,
-                hiddenBackLayer: hiddenBackLayer,
+                hiddenBackLayer: depthHidden,
                 zoomed: zoomed,
                 opacity: opacity,
                 brightness: brightness,
@@ -7080,8 +7258,8 @@ async function buildPublishedDocument(options = {}) {
             });
             var margin = clamp(cardWidth * 0.14, 10, 18);
             projected.forEach(function(item) {
-              item.boxW = item.renderWidth * item.displayScale * 1.1;
-              item.boxH = item.boxW * 1.25;
+              item.boxW = item.renderWidth;
+              item.boxH = item.renderHeight;
               item.targetX = item.zoomed ? item.displayX : item.displayX;
               item.targetY = item.zoomed ? item.displayY : item.displayY;
               if (!item.zoomed) {
@@ -7091,27 +7269,39 @@ async function buildPublishedDocument(options = {}) {
                 item.targetY = clamp(item.targetY, -maxY, maxY);
               }
             });
-            var keptVisible = [];
-            var maxVisible = width < 700 || height < 430 ? 9 : 11;
-            projected
-              .filter(function(item) { return !item.zoomed; })
-              .sort(function(a, b) { return b.depth - a.depth; })
-              .forEach(function(item) {
-                if (!anyZooming && keptVisible.length >= maxVisible) {
-                  item.hiddenBackLayer = true;
-                  return;
-                }
-                var collides = keptVisible.some(function(kept) {
-                  var overlapX = (item.boxW + kept.boxW) * 0.5 + margin - Math.abs(item.targetX - kept.targetX);
-                  var overlapY = (item.boxH + kept.boxH) * 0.5 + margin - Math.abs(item.targetY - kept.targetY);
-                  return overlapX > 0 && overlapY > 0;
-                });
-                if (collides) {
-                  item.hiddenBackLayer = true;
-                } else {
-                  keptVisible.push(item);
-                }
+            if (anyZooming) {
+              projected.forEach(function(item) {
+                item.point.occluded = false;
               });
+            } else {
+              var keptVisible = [];
+              function renderedBox(item) {
+                var view = item.point.view;
+                if (view && view.ready) {
+                  return { x: view.x, y: view.y, w: view.renderWidth, h: view.renderHeight };
+                }
+                return { x: item.targetX, y: item.targetY, w: item.boxW, h: item.boxH };
+              }
+              function overlaps(candidate, kept, extraMargin) {
+                var candidateBox = renderedBox(candidate);
+                var keptBox = renderedBox(kept);
+                var overlapX = (candidateBox.w + keptBox.w) * 0.5 + extraMargin - Math.abs(candidateBox.x - keptBox.x);
+                var overlapY = (candidateBox.h + keptBox.h) * 0.5 + extraMargin - Math.abs(candidateBox.y - keptBox.y);
+                return overlapX > 0 && overlapY > 0;
+              }
+              projected
+                .filter(function(item) { return !item.zoomed; })
+                .sort(function(a, b) { return b.depth - a.depth; })
+                .forEach(function(item) {
+                  var wasOccluded = item.point.occluded;
+                  var collides = keptVisible.some(function(kept) { return overlaps(item, kept, margin); });
+                  var remainsOccluded = wasOccluded && keptVisible.some(function(kept) { return overlaps(item, kept, margin * 1.35); });
+                  var occluded = collides || remainsOccluded;
+                  item.point.occluded = occluded;
+                  item.hiddenBackLayer = item.hiddenBackLayer || occluded;
+                  if (!item.hiddenBackLayer) keptVisible.push(item);
+                });
+            }
             projected.forEach(function(item) {
               var target = {
                 x: item.zoomed ? item.displayX : item.targetX,
@@ -7121,15 +7311,25 @@ async function buildPublishedDocument(options = {}) {
                 tiltY: item.displayTiltY,
                 scale: item.displayScale,
                 renderWidth: item.renderWidth,
+                renderHeight: item.renderHeight,
                 opacity: item.hiddenBackLayer ? 0 : item.zoomed ? 1 : item.opacity,
                 brightness: item.brightness,
                 blur: item.blur,
                 depth: item.depth
               };
               var view = item.point.view || {};
-              var ease = !view.ready ? 1 : item.zoomed ? 0.22 : motion.dragging ? 0.24 : 0.18;
-              function mix(key) {
-                view[key] = view.ready ? view[key] + (target[key] - view[key]) * ease : target[key];
+              var directlyManipulated = motion.dragging || motion.releaseTracking;
+              var ease = !view.ready ? 1 : item.zoomed ? 0.22 : directlyManipulated ? 0.24 : 0.18;
+              var sizeEase = !view.ready ? 1 : item.zoomed ? 0.16 : directlyManipulated ? 0.16 : 0.08;
+              function mix(key, factor) {
+                var delta = target[key] - view[key];
+                var threshold = key === "x" || key === "y" || key === "z" ? 0.02 : 0.0015;
+                var appliedEase = factor == null ? ease : factor;
+                view[key] = !view.ready ? target[key] : Math.abs(delta) < threshold ? target[key] : view[key] + delta * appliedEase;
+              }
+              function mixSize(key) {
+                var delta = target[key] - view[key];
+                view[key] = !view.ready ? target[key] : Math.abs(delta) < 0.35 ? target[key] : view[key] + delta * sizeEase;
               }
               mix("x");
               mix("y");
@@ -7137,18 +7337,25 @@ async function buildPublishedDocument(options = {}) {
               mix("tiltX");
               mix("tiltY");
               mix("scale");
-              mix("renderWidth");
-              mix("opacity");
+              mixSize("renderWidth");
+              mixSize("renderHeight");
+              mix("opacity", item.hiddenBackLayer ? 0.22 : directlyManipulated ? 0.12 : 0.1);
               mix("brightness");
               mix("blur");
               mix("depth");
               view.ready = true;
               item.point.view = view;
-              item.point.card.style.setProperty("--stellar-card-render-w", view.renderWidth.toFixed(2) + "px");
-              item.point.card.style.transform = "translate3d(calc(-50% + " + view.x.toFixed(2) + "px), calc(-50% + " + view.y.toFixed(2) + "px), " + view.z.toFixed(2) + "px) rotateY(" + view.tiltY.toFixed(2) + "deg) rotateX(" + view.tiltX.toFixed(2) + "deg) scale(" + view.scale.toFixed(3) + ")";
+              var renderWidth = Math.max(1, view.renderWidth);
+              var renderHeight = Math.max(1, view.renderHeight);
+              item.point.card.style.setProperty("--stellar-card-render-w", renderWidth.toFixed(2) + "px");
+              item.point.card.style.setProperty("--stellar-card-render-h", renderHeight.toFixed(2) + "px");
+              item.point.card.style.setProperty("--stellar-card-content-scale", (renderWidth / cardWidth).toFixed(4));
+              item.point.card.style.left = "calc(50% + " + (view.x - renderWidth * 0.5).toFixed(2) + "px)";
+              item.point.card.style.top = "calc(50% + " + (view.y - renderHeight * 0.5).toFixed(2) + "px)";
+              item.point.card.style.transform = "none";
               item.point.card.style.opacity = view.opacity.toFixed(3);
               item.point.card.style.pointerEvents = item.hiddenBackLayer ? "none" : "auto";
-              item.point.card.style.filter = item.zoomed ? "none" : "brightness(" + view.brightness.toFixed(3) + ") blur(" + view.blur.toFixed(2) + "px)";
+              item.point.card.style.filter = "none";
               item.point.card.style.zIndex = item.zoomed ? "9000" : String(100 + Math.round(view.depth * 1400));
             });
             container.classList.toggle("is-card-zooming", anyZooming);
@@ -7194,9 +7401,20 @@ async function buildPublishedDocument(options = {}) {
           function tick(now) {
             var delta = Math.min(48, now - motion.last);
             motion.last = now;
-            motion.rotX += (motion.targetX - motion.rotX) * 0.11;
-            motion.rotY += (motion.targetY - motion.rotY) * 0.11;
-            motion.zoom += (motion.targetZoom - motion.zoom) * 0.13;
+            var directlyManipulated = motion.dragging || motion.releaseTracking;
+            var rotationEase = 1 - Math.exp(-delta * (directlyManipulated ? 8.2 : 6.5) / 1000);
+            var zoomEase = 1 - Math.exp(-delta * 8 / 1000);
+            motion.rotX += (motion.targetX - motion.rotX) * rotationEase;
+            motion.rotY += (motion.targetY - motion.rotY) * rotationEase;
+            if (motion.releaseTracking && Math.abs(motion.targetX - motion.rotX) < 0.0015 && Math.abs(motion.targetY - motion.rotY) < 0.0015) {
+              motion.rotX = motion.targetX;
+              motion.rotY = motion.targetY;
+              motion.releaseTracking = false;
+            }
+            motion.zoom += (motion.targetZoom - motion.zoom) * zoomEase;
+            if (Math.abs(motion.targetX - motion.rotX) < 0.0015) motion.rotX = motion.targetX;
+            if (Math.abs(motion.targetY - motion.rotY) < 0.0015) motion.rotY = motion.targetY;
+            if (Math.abs(motion.targetZoom - motion.zoom) < 0.0015) motion.zoom = motion.targetZoom;
             project();
             window.requestAnimationFrame(tick);
           }
@@ -7205,21 +7423,27 @@ async function buildPublishedDocument(options = {}) {
             motion.moved = false;
             motion.startX = event.clientX;
             motion.startY = event.clientY;
-            motion.startRotX = motion.targetX;
-            motion.startRotY = motion.targetY;
+            motion.lastPointerX = event.clientX;
+            motion.lastPointerY = event.clientY;
+            motion.releaseTracking = false;
             container.classList.add("is-dragging");
             if (container.setPointerCapture) container.setPointerCapture(event.pointerId);
           });
           container.addEventListener("pointermove", function(event) {
             if (!motion.dragging) return;
-            var dx = event.clientX - motion.startX;
-            var dy = event.clientY - motion.startY;
-            if (Math.sqrt(dx * dx + dy * dy) > 10) motion.moved = true;
-            motion.targetY = motion.startRotY + dx * 0.0075;
-            motion.targetX = motion.startRotX - dy * 0.0062;
+            var totalDx = event.clientX - motion.startX;
+            var totalDy = event.clientY - motion.startY;
+            if (Math.sqrt(totalDx * totalDx + totalDy * totalDy) > 10) motion.moved = true;
+            var dx = clamp(event.clientX - motion.lastPointerX, -32, 32);
+            var dy = clamp(event.clientY - motion.lastPointerY, -32, 32);
+            motion.lastPointerX = event.clientX;
+            motion.lastPointerY = event.clientY;
+            motion.targetY += dx * 0.0044;
+            motion.targetX -= dy * 0.0038;
           });
           function endDrag() {
             motion.dragging = false;
+            motion.releaseTracking = true;
             container.classList.remove("is-dragging");
             window.setTimeout(function() { motion.moved = false; }, 90);
           }
@@ -7296,6 +7520,68 @@ async function buildPublishedDocument(options = {}) {
         document.querySelectorAll(".image-gallery").forEach(function(gallery) {
           var items = Array.prototype.slice.call(gallery.querySelectorAll(".image-gallery-item"));
           if (!items.length) return;
+          var staticCount = Math.min(items.length, 8);
+          var positions = items.map(function(_, index) { return index - 1; });
+          var moveDuration = 760;
+          var pauseDuration = 1500;
+          var moveTimer = 0;
+          var resetTimer = 0;
+          var moving = false;
+          function staticLayout() {
+            var width = gallery.clientWidth || 1;
+            var height = gallery.clientHeight || 1;
+            var cardWidth = Math.max(120, Math.min(220, width * 0.21, height * 0.4));
+            var cardHeight = cardWidth * (4 / 3);
+            var step = Math.min(cardWidth * 0.82, width * 0.155);
+            var offsets = [-3, -2, -1, 0, 1, 2, 3];
+            var scales = [0.72, 0.86, 0.96, 1.24, 0.96, 0.86, 0.72];
+            var yOffsets = [0, 0, 0, 0, 0, 0, 0];
+            var rotations = [0, 0, 0, 0, 0, 0, 0];
+            gallery.style.setProperty("--ig-card-w", cardWidth.toFixed(2) + "px");
+            gallery.style.setProperty("--ig-card-h", cardHeight.toFixed(2) + "px");
+            items.forEach(function(item, index) {
+              var position = positions[index];
+              var visible = index < staticCount && position >= 0 && position <= 6;
+              var visiblePosition = Math.min(Math.max(position, 0), 6);
+              var xPosition = position < 0 ? -4 : position > 6 ? 4 : position - 3;
+              item.style.setProperty("--ig-x", (xPosition * step).toFixed(2) + "px");
+              item.style.setProperty("--ig-y", yOffsets[visiblePosition] + "px");
+              item.style.setProperty("--ig-rotate", rotations[visiblePosition] + "deg");
+              item.style.setProperty("--ig-scale", scales[visiblePosition].toFixed(3));
+              item.style.setProperty("--ig-opacity", visible && position <= 6 ? "1" : "0");
+              var layer = 20 - Math.abs(visiblePosition - 3);
+              item.style.zIndex = String(layer);
+              item.style.setProperty("--ig-z", String(layer));
+              item.style.pointerEvents = visible ? "auto" : "none";
+            });
+          }
+          function advance() {
+            if (moving || items.length < 2) return;
+            moving = true;
+            positions.forEach(function(position, index) { positions[index] = position + 1; });
+            staticLayout();
+            resetTimer = window.setTimeout(function() {
+              var wrappedIndex = positions.indexOf(7);
+              if (wrappedIndex < 0) { moving = false; return; }
+              positions[wrappedIndex] = -1;
+              var wrappedItem = items[wrappedIndex];
+              wrappedItem.style.transition = "none";
+              staticLayout();
+              window.requestAnimationFrame(function() {
+                wrappedItem.style.transition = "";
+                moving = false;
+              });
+            }, moveDuration);
+          }
+          staticLayout();
+          window.requestAnimationFrame(function() { gallery.classList.add("is-ready"); });
+          window.addEventListener("resize", staticLayout);
+          moveTimer = window.setInterval(advance, pauseDuration + moveDuration);
+          window.addEventListener("beforeunload", function() {
+            window.clearInterval(moveTimer);
+            window.clearTimeout(resetTimer);
+          });
+          return;
           var speed = ${state.hero.speed === "fast" ? "0.18" : state.hero.speed === "slow" ? "0.055" : "0.1"};
           var autoPlay = ${shouldPlay ? "true" : "false"};
           var motion = {
@@ -7400,42 +7686,43 @@ async function buildPublishedDocument(options = {}) {
       })();
       (function() {
         document.querySelectorAll(".image-trail").forEach(function(container) {
-          var layer = container.querySelector(".image-trail-layer");
-          var sources = Array.prototype.slice.call(container.querySelectorAll(".image-trail-source-card"));
-          if (!layer || !sources.length) return;
-          var interval = 82;
-          var lifetime = 1080;
-          var motion = { lastSpawn: 0, lastX: -9999, lastY: -9999, index: 0, z: 1 };
-          function spawn(x, y, force) {
-            var now = performance.now();
-            var dx = x - motion.lastX;
-            var dy = y - motion.lastY;
-            var moved = Math.sqrt(dx * dx + dy * dy);
-            if (!force && (now - motion.lastSpawn < interval || moved < 12)) return;
-            motion.lastSpawn = now;
-            motion.lastX = x;
-            motion.lastY = y;
-            var source = sources[motion.index % sources.length];
-            motion.index += 1;
-            var item = document.createElement("div");
-            item.className = "image-trail-item";
-            item.style.left = x + "px";
-            item.style.top = y + "px";
-            item.style.zIndex = String(motion.z++);
-            item.style.setProperty("--trail-rotate", (((Math.random() - 0.5) * 18).toFixed(2)) + "deg");
-            item.style.setProperty("--trail-duration", lifetime + "ms");
-            item.appendChild(source.cloneNode(true));
-            layer.appendChild(item);
-            window.setTimeout(function() { item.remove(); }, lifetime + 80);
+          var stage = container.querySelector(".image-trail-stage");
+          var cards = Array.prototype.slice.call((stage || container).querySelectorAll(".image-trail-card"));
+          if (!stage || !cards.length) return;
+          var waveDuration = ${state.hero.speed === "fast" ? "6" : state.hero.speed === "slow" ? "12" : "9"};
+          var measureFrame = 0;
+          function measure() {
+            var width = Math.max(stage.clientWidth, 280);
+            var height = Math.max(stage.clientHeight, 260);
+            var isPhone = width <= 560;
+            var cardWidth = Math.max(82, Math.min(isPhone ? 156 : 220, width * (isPhone ? 0.3 : 0.16), height * 0.34));
+            var cardHeight = cardWidth * 1.5;
+            var gap = cardWidth * (isPhone ? 0.9 : 1.02);
+            var waveOffsets = [0, 0.38, 0, -0.38, 0, 0.38, 0];
+            stage.style.setProperty("--it-card-width", cardWidth + "px");
+            stage.style.setProperty("--it-card-height", cardHeight + "px");
+            stage.style.setProperty("--it-wave-duration", waveDuration + "s");
+            cards.forEach(function(card, index) {
+              var distance = index - (cards.length - 1) / 2;
+              var y = waveOffsets[index] * cardHeight;
+              card.style.setProperty("--it-x", (distance * gap) + "px");
+              card.style.setProperty("--it-y", y + "px");
+              card.style.setProperty("--it-rotate", "0deg");
+              card.style.setProperty("--it-scale", "1");
+              card.style.setProperty("--it-wave-delay", (-(index * waveDuration / Math.max(cards.length - 1, 1))) + "s");
+            });
           }
-          container.addEventListener("pointerenter", function(event) {
-            var rect = container.getBoundingClientRect();
-            spawn(event.clientX - rect.left, event.clientY - rect.top, true);
-          });
-          container.addEventListener("pointermove", function(event) {
-            var rect = container.getBoundingClientRect();
-            spawn(event.clientX - rect.left, event.clientY - rect.top, false);
-          });
+          function scheduleMeasure() {
+            if (measureFrame) window.cancelAnimationFrame(measureFrame);
+            measureFrame = window.requestAnimationFrame(function() {
+              measureFrame = 0;
+              measure();
+            });
+          }
+          var resizeObserver = "ResizeObserver" in window ? new ResizeObserver(scheduleMeasure) : null;
+          if (resizeObserver) resizeObserver.observe(stage);
+          window.addEventListener("resize", scheduleMeasure);
+          measure();
         });
       })();
       (function() {
