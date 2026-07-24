@@ -683,6 +683,84 @@ function templateThumbHTML(item) {
     )).join("");
     return `<span class="template-thumb thumb-orbit template-circular-thumb" aria-hidden="true">${cards}</span>`;
   }
+  if (item.id === "totem") {
+    const dots = Array.from({ length: 6 }, (_, index) => (
+      `<i class="thumb-totem-dot ${index === 2 ? "is-active" : ""}" aria-hidden="true"></i>`
+    )).join("");
+    return `<span class="template-thumb thumb-totem thumb-totem-preview" aria-hidden="true">
+      <span class="thumb-totem-layer thumb-totem-layer-top"></span>
+      <span class="thumb-totem-layer thumb-totem-layer-bottom"></span>
+      <span class="thumb-totem-main"></span>
+      <span class="thumb-totem-chevron thumb-totem-chevron-up"></span>
+      <span class="thumb-totem-chevron thumb-totem-chevron-down"></span>
+      <span class="thumb-totem-dots">${dots}</span>
+    </span>`;
+  }
+  if (item.id === "mosaic") {
+    const cards = Array.from({ length: 7 }, (_, index) => (
+      `<span class="thumb-mosaic-card thumb-mosaic-card-${index + 1}" aria-hidden="true"></span>`
+    )).join("");
+    return `<span class="template-thumb thumb-mosaic thumb-mosaic-preview" aria-hidden="true">${cards}</span>`;
+  }
+  if (item.id === "photo-orbit") {
+    const cards = Array.from({ length: 8 }, (_, index) => (
+      '<span class="thumb-photo-orbit-card thumb-photo-orbit-card-' + (index + 1) + '" aria-hidden="true"></span>'
+    )).join("");
+    return '<span class="template-thumb thumb-photo-orbit thumb-photo-orbit-preview" aria-hidden="true">' + cards + '</span>';
+  }
+  if (item.id === "scroll-morph") {
+    const cards = Array.from({ length: 5 }, (_, index) => (
+      '<span class="thumb-scroll-morph-card thumb-scroll-morph-card-' + (index + 1) + '" aria-hidden="true"></span>'
+    )).join("");
+    return '<span class="template-thumb thumb-scroll-morph thumb-scroll-morph-preview" aria-hidden="true">' + cards + '</span>';
+  }
+  if (item.id === "image-trail") {
+    const cards = Array.from({ length: 7 }, (_, index) => (
+      '<span class="thumb-image-trail-card thumb-image-trail-card-' + (index + 1) + '" aria-hidden="true"></span>'
+    )).join("");
+    return '<span class="template-thumb thumb-image-trail thumb-image-trail-preview" aria-hidden="true">' + cards + '</span>';
+  }
+  if (item.id === "three-d-carousel") {
+    return '<span class="template-thumb thumb-three-d-carousel thumb-three-d-carousel-preview" aria-hidden="true">'
+      + '<span class="thumb-three-d-carousel-card thumb-three-d-carousel-card-left"></span>'
+      + '<span class="thumb-three-d-carousel-card thumb-three-d-carousel-card-center"></span>'
+      + '<span class="thumb-three-d-carousel-card thumb-three-d-carousel-card-right"></span>'
+      + '</span>';
+  }
+  if (item.id === "masonry-gallery") {
+    return '<span class="template-thumb thumb-masonry-gallery thumb-masonry-gallery-preview" aria-hidden="true">'
+      + '<span class="thumb-masonry-gallery-card thumb-masonry-gallery-card-left"></span>'
+      + '<span class="thumb-masonry-gallery-card thumb-masonry-gallery-card-center-top"></span>'
+      + '<span class="thumb-masonry-gallery-card thumb-masonry-gallery-card-center-bottom"></span>'
+      + '<span class="thumb-masonry-gallery-card thumb-masonry-gallery-card-right"></span>'
+      + '</span>';
+  }
+  if (item.id === "ticker-loop") {
+    const cards = Array.from({ length: 20 }, (_, index) => {
+      const row = Math.floor(index / 5) + 1;
+      const column = (index % 5) + 1;
+      return '<span class="thumb-ticker-loop-card thumb-ticker-loop-card-row-' + row + '-' + column + '" aria-hidden="true"></span>';
+    }).join("");
+    return '<span class="template-thumb thumb-ticker-loop thumb-ticker-loop-preview" aria-hidden="true">' + cards + '</span>';
+  }
+  if (item.id === "stellar-gallery") {
+    const cards = Array.from({ length: 8 }, (_, index) => (
+      '<span class="thumb-stellar-gallery-card thumb-stellar-gallery-card-' + (index + 1) + '" aria-hidden="true"></span>'
+    )).join("");
+    return '<span class="template-thumb thumb-stellar-gallery thumb-stellar-gallery-preview" aria-hidden="true">' + cards + '</span>';
+  }
+  if (item.id === "portfolio-gallery") {
+    const cards = Array.from({ length: 8 }, (_, index) => (
+      '<span class="thumb-portfolio-gallery-card thumb-portfolio-gallery-card-' + (index + 1) + '" aria-hidden="true"></span>'
+    )).join("");
+    return '<span class="template-thumb thumb-portfolio-gallery thumb-portfolio-gallery-preview" aria-hidden="true">' + cards + '</span>';
+  }
+  if (item.id === "image-gallery") {
+    const cards = Array.from({ length: 7 }, (_, index) => (
+      '<span class="thumb-image-gallery-card thumb-image-gallery-card-' + (index + 1) + '" aria-hidden="true"></span>'
+    )).join("");
+    return '<span class="template-thumb thumb-image-gallery thumb-image-gallery-preview" aria-hidden="true">' + cards + '</span>';
+  }
   return `<span class="template-thumb ${item.thumb || "thumb-mosaic"}"></span>`;
 }
 
