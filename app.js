@@ -1,84 +1,102 @@
 ﻿const HERO_TEMPLATES = [
-  { id: "orbit", name: "Orbit Carousel", slots: 10, thumb: "thumb-orbit", desc: "多张作品图围绕中心形成可旋转的 3D 环形卡片流。" },
-  { id: "film", name: "Circular Gallery", slots: 8, thumb: "thumb-film", desc: "图片沿弧形画廊轨道平滑循环移动。" },
-  { id: "totem", name: "Card Totem", slots: 10, thumb: "thumb-totem", desc: "10 张图片纵向层叠轮播，当前作品清晰居中。" },
-  { id: "mosaic", name: "Mosaic Grid", slots: 6, thumb: "thumb-mosaic", desc: "作品图组成不规则拼贴网格。" }
+  { id: "orbit", name: "环形卡片轮播 Orbit Carousel", titleCn: "环形卡片轮播", titleEn: "Orbit Carousel", slots: 10, thumb: "thumb-orbit", desc: "卡片沿环形轨道排布" },
+  { id: "film", name: "扇形画廊 Sector Deck", titleCn: "扇形画廊", titleEn: "Sector Deck", slots: 8, thumb: "thumb-film", desc: "立体扇形景深轮播" },
+  { id: "totem", name: "纵向叠栈 Vertical Stack", titleCn: "纵向叠栈", titleEn: "Vertical Stack", slots: 10, thumb: "thumb-totem", desc: "纵向层叠式卡片队列" },
+  { id: "mosaic", name: "拼图栅格 Patch Grid", titleCn: "拼图栅格", titleEn: "Patch Grid", slots: 6, thumb: "thumb-mosaic", desc: "卡片组成拼音布局" }
 ];
 Object.assign(HERO_TEMPLATES.find((item) => item.id === "mosaic"), {
   slots: 7,
-  desc: "7 张图片组成可滚动缩放的 Zoom Parallax 拼贴。"
+  desc: "卡片组成拼音布局"
 });
 
 HERO_TEMPLATES.push({
   id: "photo-orbit",
-  name: "Photo Orbit",
+  name: "环阵画廊 Ring Orbit",
+  titleCn: "环阵画廊",
+  titleEn: "Ring Orbit",
   slots: 8,
   thumb: "thumb-photo-orbit",
-  desc: "8 张图片围绕中心错落旋转，支持鼠标透视与悬停放大。"
+  desc: "卡片沿圆环环绕旋转"
 });
 
 HERO_TEMPLATES.push({
   id: "scroll-morph",
-  name: "Scroll Morph",
+  name: "纵深队列 Depth Queue",
+  titleCn: "纵深队列",
+  titleEn: "Depth Queue",
   slots: 20,
   thumb: "thumb-scroll-morph",
-  desc: "20 张图片从散点、线性队列变形成圆环，再随滚轮过渡为底部弧形。"
+  desc: "递进式 3D 透视画廊"
 });
 
 HERO_TEMPLATES.push({
   id: "image-trail",
-  name: "Image Trail",
+  name: "波浪队列 Wave Trail",
+  titleCn: "波浪队列",
+  titleEn: "Wave Trail",
   slots: 7,
   thumb: "thumb-image-trail",
-  desc: "作品图横向错落排列，沿柔和波浪节奏上下浮动。"
+  desc: "波浪式上下浮动"
 });
 
 HERO_TEMPLATES.push({
   id: "three-d-carousel",
-  name: "3D Carousel",
+  name: "柱面轮播 Cylinder Carousel",
+  titleCn: "柱面轮播",
+  titleEn: "Cylinder Carousel",
   slots: 8,
   thumb: "thumb-three-d-carousel",
-  desc: "14 张作品图围绕圆柱排布，可拖拽旋转并点击放大查看。"
+  desc: "圆柱形环绕阵列"
 });
 
 HERO_TEMPLATES.push({
   id: "masonry-gallery",
-  name: "Masonry",
+  name: "瀑布流 Masonry Grid",
+  titleCn: "瀑布流",
+  titleEn: "Masonry Grid",
   slots: 30,
   thumb: "thumb-masonry-gallery",
-  desc: "30 张作品图组成三列瀑布流，滚动进入视野时柔和淡入。"
+  desc: "三列错落瀑布布局"
 });
 
 HERO_TEMPLATES.push({
   id: "image-gallery",
-  name: "Image Gallery",
+  name: "聚焦轮播 Focus Carousel",
+  titleCn: "聚焦轮播",
+  titleEn: "Focus Carousel",
   slots: 8,
   thumb: "thumb-image-gallery",
-  desc: "8 张图片横向分步轮播，中间卡片保持最高层级。"
+  desc: "横向分步轮播布局"
 });
 
 HERO_TEMPLATES.push({
   id: "portfolio-gallery",
-  name: "Portfolio Gallery",
+  name: "窄列牌组 Slim Deck",
+  titleCn: "窄列牌组",
+  titleEn: "Slim Deck",
   slots: 12,
   thumb: "thumb-portfolio-gallery",
-  desc: "12 张作品图以 3D 透视方式紧凑重叠排布，悬停时当前图片上浮并放大。"
+  desc: "3D 透视卡片队列"
 });
 
 HERO_TEMPLATES.push({
   id: "ticker-loop",
-  name: "Ticker Loop",
+  name: "斜向循环 Slant Loop",
+  titleCn: "斜向循环",
+  titleEn: "Slant Loop",
   slots: 12,
   thumb: "thumb-ticker-loop",
-  desc: "12 张作品图组成四行倾斜滚动网格，悬停暂停并支持单张放大。"
+  desc: "四行倾斜滚动网格"
 });
 
 HERO_TEMPLATES.push({
   id: "stellar-gallery",
-  name: "3D Stellar Card Gallery",
+  name: "柱星野阵列 Stellar Field",
+  titleCn: "柱星野阵列",
+  titleEn: "Stellar Field",
   slots: 20,
   thumb: "thumb-stellar-gallery",
-  desc: "20 张图片组成可拖拽查看的 3D 星空卡片阵列。"
+  desc: "3D散点星空形式排"
 });
 
 const ABOUT_LAYOUTS = [
@@ -659,10 +677,16 @@ function renderTemplateCards(selector, items, activeId, onSelect) {
   root.innerHTML = items.map((item) => `
     <button class="template-card ${item.id === activeId ? "is-active" : ""}" data-id="${item.id}">
       ${templateThumbHTML(item)}
-      <span>
-        <strong>${escapeHTML(item.name)}</strong>
-        <span>${escapeHTML(item.desc)}</span>
-      </span>
+      ${item.titleCn && item.titleEn
+        ? `<span class="template-card-copy template-card-copy-split">
+            <strong class="template-title-cn">${escapeHTML(item.titleCn)}</strong>
+            <strong class="template-title-en">${escapeHTML(item.titleEn)}</strong>
+            <span class="template-description">${escapeHTML(item.desc)}</span>
+          </span>`
+        : `<span>
+            <strong>${escapeHTML(item.name)}</strong>
+            <span>${escapeHTML(item.desc)}</span>
+          </span>`}
     </button>
   `).join("");
   $$(".template-card", root).forEach((card) => {
