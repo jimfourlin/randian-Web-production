@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RD作品集网页设计模板</title>
-    <link rel="stylesheet" href="styles.css?v=template-copy-split-20260724-64" />
+    <link rel="stylesheet" href="styles.css?v=card-ratio-crop-20260727-52" />
     <style>
       .panel-section:has(#styleTarget) {
         display: none !important;
@@ -121,7 +121,7 @@
           </section>
 
           <section class="panel-section config-screen" data-config="hero">
-            <div class="field-grid">
+            <div class="field-grid hero-config-grid">
               <label>
                 <span>画布比例</span>
                 <select id="ratioSelect">
@@ -130,6 +130,17 @@
                   <option value="1-1">1:1</option>
                   <option value="4-5">4:5</option>
                   <option value="9-16">9:16</option>
+                </select>
+              </label>
+              <label>
+                <span>卡片比例</span>
+                <select id="cardRatioSelect">
+                  <option value="auto">默认（1:1）</option>
+                  <option value="1-1">1:1</option>
+                  <option value="3-4">3:4</option>
+                  <option value="4-3">4:3</option>
+                  <option value="9-16">9:16</option>
+                  <option value="16-9">16:9</option>
                 </select>
               </label>
               <label>
@@ -549,6 +560,10 @@ label span,
 .right-panel {
   border-right: 0;
   border-left: 1px solid var(--line);
+}
+
+.right-panel > .config-screen[data-config="hero"] {
+  border-bottom: 0;
 }
 
 .panel-section {
@@ -2013,14 +2028,7 @@ label span,
 }
 
 .template-card .thumb-stellar-gallery-preview > .thumb-stellar-gallery-card::after {
-  content: "";
-  position: absolute;
-  left: 24%;
-  top: 28%;
-  width: 52%;
-  height: 42%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-sizing: border-box;
+  content: none;
 }
 
 .template-card .thumb-stellar-gallery-card-1 {
@@ -5792,7 +5800,8 @@ label span,
   left: 50%;
   top: 58%;
   width: clamp(96px, 12vw, 132px);
-  height: clamp(126px, 15.8vw, 174px);
+  height: auto;
+  aspect-ratio: var(--circular-card-ratio, 3 / 4);
   will-change: transform, opacity, filter;
   animation: circularGalleryLoop var(--anim-duration, 22s) linear infinite;
   animation-delay: var(--delay, 0s);
@@ -5939,7 +5948,7 @@ label span,
 .vertical-stack-card {
   position: absolute;
   height: min(88%, 430px);
-  aspect-ratio: 2 / 3;
+  aspect-ratio: var(--stack-card-ratio, 2 / 3);
   z-index: var(--stack-z, 1);
   transform: translate3d(0, var(--stack-y, 0), 0) scale(var(--stack-scale, 1));
   opacity: var(--stack-opacity, 1);
@@ -10094,6 +10103,6 @@ html.image-export *,
 </script>
 
     <script src="html2canvas.min.js"></script>
-    <script src="app.js?v=stellar-gallery-thumb-20260724-55"></script>
+    <script src="app.js?v=card-ratio-crop-20260727-54"></script>
   </body>
 </html>

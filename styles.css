@@ -235,6 +235,40 @@ select option {
   font-weight: 700;
 }
 
+.custom-select[data-select="cardRatioSelect"]:not(.is-film-ratio):not(.is-totem-ratio):not(.is-three-d-ratio):not(.is-image-gallery-ratio):not(.is-portfolio-ratio):not(.is-stellar-ratio) .custom-select-option[data-value="1-1"],
+.custom-select[data-select="cardRatioSelect"].is-film-ratio .custom-select-option[data-value="3-4"],
+.custom-select[data-select="cardRatioSelect"].is-film-ratio .custom-select-option[data-value="16-9"],
+.custom-select[data-select="cardRatioSelect"].is-mosaic-ratio .custom-select-option:not([data-value="auto"]),
+.custom-select[data-select="cardRatioSelect"].is-photo-orbit-ratio .custom-select-option[data-value="9-16"],
+.custom-select[data-select="cardRatioSelect"].is-photo-orbit-ratio .custom-select-option[data-value="16-9"],
+.custom-select[data-select="cardRatioSelect"].is-scroll-morph-ratio .custom-select-option[data-value="1-1"],
+.custom-select[data-select="cardRatioSelect"].is-scroll-morph-ratio .custom-select-option[data-value="3-4"],
+.custom-select[data-select="cardRatioSelect"].is-scroll-morph-ratio .custom-select-option[data-value="4-3"],
+.custom-select[data-select="cardRatioSelect"].is-scroll-morph-ratio .custom-select-option[data-value="16-9"],
+.custom-select[data-select="cardRatioSelect"].is-image-trail-ratio .custom-select-option[data-value="1-1"],
+.custom-select[data-select="cardRatioSelect"].is-image-trail-ratio .custom-select-option[data-value="4-3"],
+.custom-select[data-select="cardRatioSelect"].is-image-trail-ratio .custom-select-option[data-value="16-9"],
+.custom-select[data-select="cardRatioSelect"].is-three-d-ratio .custom-select-option[data-value="3-4"] {
+  display: none;
+}
+
+.custom-select[data-select="cardRatioSelect"].is-masonry-ratio .custom-select-option:not([data-value="auto"]) {
+  display: none;
+}
+
+.custom-select[data-select="cardRatioSelect"].is-image-gallery-ratio .custom-select-option[data-value="3-4"],
+.custom-select[data-select="cardRatioSelect"].is-image-gallery-ratio .custom-select-option[data-value="16-9"] {
+  display: none;
+}
+
+.custom-select[data-select="cardRatioSelect"].is-portfolio-ratio .custom-select-option[data-value="16-9"] {
+  display: none;
+}
+
+.custom-select[data-select="cardRatioSelect"].is-portfolio-ratio .custom-select-option[data-value="9-16"] {
+  display: none;
+}
+
 textarea {
   min-height: 76px;
   resize: vertical;
@@ -534,6 +568,10 @@ textarea,
 .right-panel {
   border-right: 0;
   border-left: 1px solid var(--line);
+}
+
+.right-panel > .config-screen[data-config="hero"] {
+  border-bottom: 0;
 }
 
 .panel-section {
@@ -2265,14 +2303,7 @@ textarea,
 }
 
 .template-card .thumb-stellar-gallery-preview > .thumb-stellar-gallery-card::after {
-  content: "";
-  position: absolute;
-  left: 24%;
-  top: 28%;
-  width: 52%;
-  height: 42%;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-sizing: border-box;
+  content: none;
 }
 
 .template-card .thumb-stellar-gallery-card-1 {
@@ -3901,7 +3932,8 @@ body.is-slot-dragging .slot-card {
 
 .orbit-flow .media-card {
   width: clamp(112px, 19%, 168px);
-  height: clamp(160px, 34%, 240px);
+  height: auto;
+  aspect-ratio: var(--orbit-card-ratio, 1 / 1);
   left: 50%;
   top: 50%;
   transform-origin: center center;
@@ -3911,6 +3943,15 @@ body.is-slot-dragging .slot-card {
   backface-visibility: hidden;
 }
 
+/* Landscape cards need more area while their orbit center points stay fixed. */
+.orbit-flow[data-card-ratio="4-3"] .media-card {
+  width: clamp(128px, 22%, 192px);
+}
+
+.orbit-flow[data-card-ratio="16-9"] .media-card {
+  width: clamp(148px, 28%, 240px);
+}
+
 .orbit-flow .media-card > img {
   display: block;
   width: calc(100% + 2px);
@@ -3918,6 +3959,13 @@ body.is-slot-dragging .slot-card {
   max-width: none;
   margin: -1px;
   object-fit: cover;
+  opacity: 1;
+  transition: opacity 480ms ease-in-out;
+  will-change: opacity;
+}
+
+.orbit-flow .media-card > img.is-reframing {
+  opacity: 0;
 }
 
 @keyframes orbitLoop {
@@ -4031,7 +4079,7 @@ body.is-slot-dragging .slot-card {
   left: 50%;
   top: 50%;
   width: clamp(104px, 22%, 182px);
-  aspect-ratio: 1 / 1;
+  aspect-ratio: var(--photo-orbit-card-ratio, 1 / 1);
   opacity: var(--orbit-opacity, 1);
   filter: brightness(var(--orbit-brightness, 1)) saturate(0.96);
   transform:
@@ -4044,6 +4092,10 @@ body.is-slot-dragging .slot-card {
     filter 220ms ease;
   will-change: transform, opacity, filter;
   pointer-events: auto;
+}
+
+.photo-orbit[data-card-ratio="4-3"] .photo-orbit-card {
+  width: clamp(128px, 28%, 230px);
 }
 
 .photo-orbit-surface {
@@ -4789,7 +4841,8 @@ body.is-slot-dragging .slot-card {
   left: 50%;
   top: 50%;
   width: var(--stellar-card-render-w, var(--stellar-card-w, 108px));
-  height: var(--stellar-card-render-h, calc(var(--stellar-card-w, 108px) * 1.25));
+  height: var(--stellar-card-render-h, 135px);
+  aspect-ratio: var(--stellar-card-ratio, 4 / 5);
   display: grid;
   place-items: center;
   padding: 0;
@@ -5350,7 +5403,7 @@ body.is-slot-dragging .slot-card {
   position: relative;
   flex: 0 0 auto;
   width: clamp(140px, 22%, 340px);
-  aspect-ratio: 16 / 9;
+  aspect-ratio: var(--portfolio-card-ratio, 16 / 9);
   padding: 0;
   margin-left: clamp(-216px, -15%, -74px);
   border: 0;
@@ -6040,7 +6093,7 @@ body.is-slot-dragging .slot-card {
 .ticker-loop-grid {
   width: max-content;
   gap: 34px;
-  transform: translateY(-18%) rotate(-11deg) scale(var(--ticker-scale, 1.15));
+  transform: translate(var(--ticker-shift-x, 0px), calc(-18% + var(--ticker-shift-y, 0px))) rotate(-11deg) scale(var(--ticker-scale, 1.15));
 }
 
 .ticker-loop-row {
@@ -6058,8 +6111,9 @@ body.is-slot-dragging .slot-card {
 
 .ticker-loop-card,
 .ticker-loop-card:hover {
-  width: 120px;
-  height: 120px;
+  width: var(--ticker-card-width, 120px);
+  height: auto;
+  aspect-ratio: var(--ticker-card-ratio, 1 / 1);
   padding: 0;
   border: 0;
   border-radius: 12px;
@@ -6240,8 +6294,9 @@ body.is-slot-dragging .slot-card {
   }
 
   .ticker-loop-card {
-    width: 120px;
-    height: 120px;
+    width: var(--ticker-card-width, 120px);
+    height: auto;
+    aspect-ratio: var(--ticker-card-ratio, 1 / 1);
     border-radius: 12px;
   }
 }
@@ -6293,7 +6348,8 @@ body.is-slot-dragging .slot-card {
   left: 50%;
   top: 58%;
   width: clamp(96px, 12vw, 132px);
-  height: clamp(126px, 15.8vw, 174px);
+  height: auto;
+  aspect-ratio: var(--circular-card-ratio, 3 / 4);
   will-change: transform, opacity, filter;
   animation: circularGalleryLoop var(--anim-duration, 22s) linear infinite;
   animation-delay: var(--delay, 0s);
@@ -6442,7 +6498,7 @@ body.is-slot-dragging .slot-card {
 .vertical-stack-card {
   position: absolute;
   height: var(--totem-card-height);
-  aspect-ratio: 2 / 3;
+  aspect-ratio: var(--stack-card-ratio, 2 / 3);
   z-index: var(--stack-z, 1);
   transform: translate3d(0, var(--stack-y, 0), 0) scale(var(--stack-scale, 1));
   opacity: var(--stack-opacity, 1);
@@ -11262,7 +11318,7 @@ label span {
   }
 
   .config-screen[data-config="hero"] .field-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
   }
 

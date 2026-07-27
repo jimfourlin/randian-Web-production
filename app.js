@@ -233,6 +233,24 @@ let customSelectSyncs = [];
 const svgAssetUrlCache = new Map();
 const svgAssetPromises = new Map();
 const SLOT_UPLOAD_ICON_SOURCE = "assets/image-upload-icon.svg";
+const HERO_CARD_RATIO_OPTIONS = Object.freeze(["auto", "1-1", "3-4", "4-3", "9-16", "16-9"]);
+const HERO_CARD_RATIO_CSS = Object.freeze({
+  auto: "1 / 1",
+  "1-1": "1 / 1",
+  "3-4": "3 / 4",
+  "4-3": "4 / 3",
+  "9-16": "9 / 16",
+  "16-9": "16 / 9"
+});
+const HERO_CARD_RATIO_VALUES = Object.freeze({
+  auto: 1,
+  "1-1": 1,
+  "3-4": 3 / 4,
+  "4-3": 4 / 3,
+  "9-16": 9 / 16,
+  "16-9": 16 / 9
+});
+let orbitReframeRequest = 0;
 
 function makeDefaultState() {
   return {
@@ -244,6 +262,18 @@ function makeDefaultState() {
     hero: {
       template: "orbit",
       ratio: "16-9",
+      cardRatio: "auto",
+      filmCardRatio: "auto",
+      totemCardRatio: "auto",
+      photoOrbitCardRatio: "auto",
+      scrollMorphCardRatio: "auto",
+      imageTrailCardRatio: "auto",
+      threeDCarouselCardRatio: "auto",
+      masonryGalleryCardRatio: "auto",
+      imageGalleryCardRatio: "auto",
+      portfolioGalleryCardRatio: "auto",
+      tickerLoopCardRatio: "auto",
+      stellarGalleryCardRatio: "auto",
       speed: "medium",
       background: "black",
       activeIndex: 0,
@@ -538,6 +568,61 @@ function fitCanvasFrame() {
 
 function editorCanvasRatioKey() {
   return state.hero.ratio || "16-9";
+}
+
+function heroCardRatioValue(template = state.hero.template) {
+  if (template === "film") return state.hero.filmCardRatio || "auto";
+  if (template === "totem") return state.hero.totemCardRatio || "auto";
+  if (template === "photo-orbit") return state.hero.photoOrbitCardRatio || "auto";
+  if (template === "scroll-morph") return state.hero.scrollMorphCardRatio || "auto";
+  if (template === "image-trail") return state.hero.imageTrailCardRatio || "auto";
+  if (template === "three-d-carousel") return state.hero.threeDCarouselCardRatio || "auto";
+  if (template === "masonry-gallery") return state.hero.masonryGalleryCardRatio || "auto";
+  if (template === "image-gallery") return state.hero.imageGalleryCardRatio || "auto";
+  if (template === "portfolio-gallery") return state.hero.portfolioGalleryCardRatio || "auto";
+  if (template === "ticker-loop") return state.hero.tickerLoopCardRatio || "auto";
+  if (template === "stellar-gallery") return state.hero.stellarGalleryCardRatio || "auto";
+  return state.hero.cardRatio || "auto";
+}
+
+function heroCardRatioOptions(template = state.hero.template) {
+  if (template === "film") return ["auto", "1-1", "4-3", "9-16"];
+  if (template === "totem") return ["auto", "1-1", "3-4", "4-3", "9-16", "16-9"];
+  if (template === "mosaic") return ["auto"];
+  if (template === "photo-orbit") return ["auto", "3-4", "4-3"];
+  if (template === "scroll-morph") return ["auto", "9-16"];
+  if (template === "image-trail") return ["auto", "3-4", "9-16"];
+  if (template === "three-d-carousel") return ["auto", "1-1", "4-3", "9-16", "16-9"];
+  if (template === "masonry-gallery") return ["auto"];
+  if (template === "image-gallery") return ["auto", "1-1", "4-3", "9-16"];
+  if (template === "portfolio-gallery") return ["auto", "1-1", "3-4", "4-3"];
+  if (template === "ticker-loop") return ["auto", "3-4", "4-3", "9-16", "16-9"];
+  if (template === "stellar-gallery") return ["auto", "3-4", "1-1", "4-3", "9-16", "16-9"];
+  return ["auto", "3-4", "4-3", "9-16", "16-9"];
+}
+
+function heroCardRatioCss(value = heroCardRatioValue(), template = state.hero.template) {
+  if (value === "auto" && template === "film") return HERO_CARD_RATIO_CSS["3-4"];
+  if (value === "auto" && template === "totem") return "2 / 3";
+  if (value === "auto" && template === "scroll-morph") return HERO_CARD_RATIO_CSS["3-4"];
+  if (value === "auto" && template === "image-trail") return "2 / 3";
+  if (value === "auto" && template === "three-d-carousel") return HERO_CARD_RATIO_CSS["3-4"];
+  if (value === "auto" && template === "image-gallery") return HERO_CARD_RATIO_CSS["3-4"];
+  if (value === "auto" && template === "portfolio-gallery") return HERO_CARD_RATIO_CSS["16-9"];
+  if (value === "auto" && template === "stellar-gallery") return "4 / 5";
+  return HERO_CARD_RATIO_CSS[value] || HERO_CARD_RATIO_CSS.auto;
+}
+
+function heroCardRatioAspect(value = heroCardRatioValue(), template = state.hero.template) {
+  if (value === "auto" && template === "film") return HERO_CARD_RATIO_VALUES["3-4"];
+  if (value === "auto" && template === "totem") return 2 / 3;
+  if (value === "auto" && template === "scroll-morph") return HERO_CARD_RATIO_VALUES["3-4"];
+  if (value === "auto" && template === "image-trail") return 2 / 3;
+  if (value === "auto" && template === "three-d-carousel") return HERO_CARD_RATIO_VALUES["3-4"];
+  if (value === "auto" && template === "image-gallery") return HERO_CARD_RATIO_VALUES["3-4"];
+  if (value === "auto" && template === "portfolio-gallery") return HERO_CARD_RATIO_VALUES["16-9"];
+  if (value === "auto" && template === "stellar-gallery") return 4 / 5;
+  return HERO_CARD_RATIO_VALUES[value] || HERO_CARD_RATIO_VALUES.auto;
 }
 
 function renderChrome() {
@@ -976,6 +1061,37 @@ function bindHeroControls() {
     state.hero.ratio = event.target.value;
     renderAll();
   });
+  $("#cardRatioSelect").addEventListener("change", (event) => {
+    const nextRatio = event.target.value;
+    const template = state.hero.template;
+    const previousRatio = heroCardRatioValue(template);
+    if (template === "film") state.hero.filmCardRatio = nextRatio;
+    else if (template === "totem") state.hero.totemCardRatio = nextRatio;
+    else if (template === "photo-orbit") state.hero.photoOrbitCardRatio = nextRatio;
+    else if (template === "scroll-morph") state.hero.scrollMorphCardRatio = nextRatio;
+    else if (template === "image-trail") state.hero.imageTrailCardRatio = nextRatio;
+    else if (template === "three-d-carousel") state.hero.threeDCarouselCardRatio = nextRatio;
+    else if (template === "masonry-gallery") state.hero.masonryGalleryCardRatio = nextRatio;
+    else if (template === "image-gallery") state.hero.imageGalleryCardRatio = nextRatio;
+    else if (template === "portfolio-gallery") state.hero.portfolioGalleryCardRatio = nextRatio;
+    else if (template === "ticker-loop") state.hero.tickerLoopCardRatio = nextRatio;
+    else if (template === "stellar-gallery") state.hero.stellarGalleryCardRatio = nextRatio;
+    else state.hero.cardRatio = nextRatio;
+    if (state.hero.template === "orbit" && nextRatio !== previousRatio) {
+      const request = ++orbitReframeRequest;
+      updateOrbitCardRatio(nextRatio);
+      const transitionImages = beginOrbitImageReframeTransition();
+      reframeOrbitMediaForRatio(nextRatio, request, transitionImages).then((media) => {
+        if (request !== orbitReframeRequest) return;
+        state.hero.media = media;
+        renderSlots();
+      }).catch(() => {
+        if (request === orbitReframeRequest) finishOrbitImageReframeTransition(transitionImages);
+      });
+      return;
+    }
+    renderAll();
+  });
   $("#speedSelect").addEventListener("change", (event) => {
     state.hero.speed = event.target.value;
     renderAll();
@@ -989,11 +1105,12 @@ function bindHeroControls() {
 
 function setupHeroCustomSelects() {
   customSelectSyncs = [];
-  ["ratioSelect", "speedSelect", "backgroundSelect"].forEach((id) => {
+  ["ratioSelect", "cardRatioSelect", "speedSelect", "backgroundSelect"].forEach((id) => {
     const select = $(`#${id}`);
     if (!select || select.dataset.customSelectReady === "true") return;
     const wrapper = document.createElement("div");
     wrapper.className = "custom-select";
+    wrapper.dataset.select = id;
     select.parentElement.insertBefore(wrapper, select);
     wrapper.appendChild(select);
 
@@ -1107,12 +1224,78 @@ function syncHeroCustomSelects() {
   customSelectSyncs.forEach((sync) => sync());
 }
 
+function syncHeroCardRatioLabel() {
+  const select = $("#cardRatioSelect");
+  if (!select) return;
+  const label = state.hero.template === "film"
+    ? "默认（3:4）"
+    : state.hero.template === "totem" ? "默认（2:3）"
+      : state.hero.template === "scroll-morph" ? "默认（3:4）"
+      : state.hero.template === "image-trail" ? "默认（2:3）"
+            : state.hero.template === "three-d-carousel" ? "默认（3:4）"
+            : state.hero.template === "masonry-gallery" ? "默认（混合比例）"
+              : state.hero.template === "image-gallery" ? "默认（3:4）"
+              : state.hero.template === "portfolio-gallery" ? "默认（16:9）"
+                : state.hero.template === "stellar-gallery" ? "默认（4:5）" : "默认（1:1）";
+  const nativeOption = [...select.options].find((option) => option.value === "auto");
+  if (nativeOption) nativeOption.textContent = label;
+  const customOption = $(".custom-select[data-select='cardRatioSelect'] .custom-select-option[data-value='auto']");
+  if (customOption) customOption.textContent = label;
+}
+
 function bindStyleControls() {
   $("#styleTarget")?.addEventListener("change", renderStyleControls);
 }
 
 function renderConfig() {
   $("#ratioSelect").value = state.hero.ratio;
+  state.hero.cardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.cardRatio) ? state.hero.cardRatio : "auto";
+  state.hero.filmCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.filmCardRatio) ? state.hero.filmCardRatio : "auto";
+  state.hero.totemCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.totemCardRatio) ? state.hero.totemCardRatio : "auto";
+  state.hero.photoOrbitCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.photoOrbitCardRatio) ? state.hero.photoOrbitCardRatio : "auto";
+  state.hero.scrollMorphCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.scrollMorphCardRatio) ? state.hero.scrollMorphCardRatio : "auto";
+  state.hero.imageTrailCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.imageTrailCardRatio) ? state.hero.imageTrailCardRatio : "auto";
+  state.hero.threeDCarouselCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.threeDCarouselCardRatio) ? state.hero.threeDCarouselCardRatio : "auto";
+  state.hero.masonryGalleryCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.masonryGalleryCardRatio) ? state.hero.masonryGalleryCardRatio : "auto";
+  state.hero.imageGalleryCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.imageGalleryCardRatio) ? state.hero.imageGalleryCardRatio : "auto";
+  state.hero.portfolioGalleryCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.portfolioGalleryCardRatio) ? state.hero.portfolioGalleryCardRatio : "auto";
+  state.hero.tickerLoopCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.tickerLoopCardRatio) ? state.hero.tickerLoopCardRatio : "auto";
+  state.hero.stellarGalleryCardRatio = HERO_CARD_RATIO_OPTIONS.includes(state.hero.stellarGalleryCardRatio) ? state.hero.stellarGalleryCardRatio : "auto";
+  const cardRatioOptions = heroCardRatioOptions();
+  const activeCardRatio = heroCardRatioValue();
+  const cardRatioSelect = $("#cardRatioSelect");
+  cardRatioSelect.value = cardRatioOptions.includes(activeCardRatio) ? activeCardRatio : "auto";
+  if (!cardRatioOptions.includes(activeCardRatio)) {
+    if (state.hero.template === "film") state.hero.filmCardRatio = "auto";
+    else if (state.hero.template === "totem") state.hero.totemCardRatio = "auto";
+    else if (state.hero.template === "photo-orbit") state.hero.photoOrbitCardRatio = "auto";
+    else if (state.hero.template === "scroll-morph") state.hero.scrollMorphCardRatio = "auto";
+    else if (state.hero.template === "image-trail") state.hero.imageTrailCardRatio = "auto";
+    else if (state.hero.template === "three-d-carousel") state.hero.threeDCarouselCardRatio = "auto";
+    else if (state.hero.template === "masonry-gallery") state.hero.masonryGalleryCardRatio = "auto";
+    else if (state.hero.template === "image-gallery") state.hero.imageGalleryCardRatio = "auto";
+    else if (state.hero.template === "portfolio-gallery") state.hero.portfolioGalleryCardRatio = "auto";
+    else if (state.hero.template === "ticker-loop") state.hero.tickerLoopCardRatio = "auto";
+    else if (state.hero.template === "stellar-gallery") state.hero.stellarGalleryCardRatio = "auto";
+    else state.hero.cardRatio = "auto";
+  }
+  const cardRatioWrapper = cardRatioSelect.closest(".custom-select");
+  cardRatioWrapper?.classList.toggle("is-film-ratio", state.hero.template === "film");
+  cardRatioWrapper?.classList.toggle("is-totem-ratio", state.hero.template === "totem");
+  cardRatioWrapper?.classList.toggle("is-mosaic-ratio", state.hero.template === "mosaic");
+  cardRatioWrapper?.classList.toggle("is-photo-orbit-ratio", state.hero.template === "photo-orbit");
+  cardRatioWrapper?.classList.toggle("is-scroll-morph-ratio", state.hero.template === "scroll-morph");
+  cardRatioWrapper?.classList.toggle("is-image-trail-ratio", state.hero.template === "image-trail");
+  cardRatioWrapper?.classList.toggle("is-three-d-ratio", state.hero.template === "three-d-carousel");
+  cardRatioWrapper?.classList.toggle("is-masonry-ratio", state.hero.template === "masonry-gallery");
+  cardRatioWrapper?.classList.toggle("is-image-gallery-ratio", state.hero.template === "image-gallery");
+  cardRatioWrapper?.classList.toggle("is-portfolio-ratio", state.hero.template === "portfolio-gallery");
+  cardRatioWrapper?.classList.toggle("is-ticker-loop-ratio", state.hero.template === "ticker-loop");
+  cardRatioWrapper?.classList.toggle("is-stellar-ratio", state.hero.template === "stellar-gallery");
+  [...cardRatioSelect.options].forEach((option) => {
+    option.hidden = !cardRatioOptions.includes(option.value);
+  });
+  syncHeroCardRatioLabel();
   $("#speedSelect").value = state.hero.speed;
   state.hero.background = normalizeHeroBackground(state.hero.background);
   $("#backgroundSelect").value = state.hero.background;
@@ -1476,19 +1659,19 @@ function mosaicSlotCropAspect(slotIndex) {
 
 function cropAspectForTemplate(templateId = state.hero.template, slotIndex = null) {
   return {
-    orbit: 4 / 5,
-    film: 1,
-    totem: 4 / 5,
+    orbit: heroCardRatioAspect(),
+    film: heroCardRatioAspect(heroCardRatioValue("film"), "film"),
+    totem: heroCardRatioAspect(heroCardRatioValue("totem"), "totem"),
     mosaic: slotIndex == null ? 4 / 3 : mosaicSlotCropAspect(slotIndex),
-    "photo-orbit": 1,
-    "scroll-morph": 3 / 4,
-    "image-trail": 4 / 5,
-    "three-d-carousel": 3 / 4,
-    "stellar-gallery": 4 / 5,
+    "photo-orbit": heroCardRatioAspect(heroCardRatioValue("photo-orbit"), "photo-orbit"),
+    "scroll-morph": heroCardRatioAspect(heroCardRatioValue("scroll-morph"), "scroll-morph"),
+    "image-trail": heroCardRatioAspect(heroCardRatioValue("image-trail"), "image-trail"),
+    "three-d-carousel": heroCardRatioAspect(heroCardRatioValue("three-d-carousel"), "three-d-carousel"),
+    "stellar-gallery": heroCardRatioAspect(heroCardRatioValue("stellar-gallery"), "stellar-gallery"),
     "masonry-gallery": 4 / 5,
-    "image-gallery": 1,
-    "portfolio-gallery": 16 / 9,
-    "ticker-loop": 1
+    "image-gallery": heroCardRatioAspect(heroCardRatioValue("image-gallery"), "image-gallery"),
+    "portfolio-gallery": heroCardRatioAspect(heroCardRatioValue("portfolio-gallery"), "portfolio-gallery"),
+    "ticker-loop": heroCardRatioAspect(heroCardRatioValue("ticker-loop"), "ticker-loop")
   }[templateId] || 4 / 5;
 }
 
@@ -1496,6 +1679,100 @@ function cropSizeForAspect(aspect) {
   const longSide = 2200;
   if (aspect >= 1) return { width: longSide, height: Math.round(longSide / aspect) };
   return { width: Math.round(longSide * aspect), height: longSide };
+}
+
+function nextAnimationFrame() {
+  return new Promise((resolve) => window.requestAnimationFrame(resolve));
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function reframeOrbitMediaForRatio(value, request, transitionImages) {
+  const aspect = heroCardRatioAspect(value);
+  const reframed = state.hero.media.slice();
+  await nextAnimationFrame();
+  for (let index = 0; index < state.hero.media.length; index += 1) {
+    if (request !== orbitReframeRequest) return null;
+    if (!await prepareOrbitMediaImage(index, request, transitionImages)) return null;
+    const media = await reframeOrbitMediaItem(state.hero.media[index], aspect);
+    reframed[index] = media;
+    await syncOrbitMediaImage(index, media, request, transitionImages);
+    await wait(55);
+    await nextAnimationFrame();
+  }
+  return reframed;
+}
+
+async function reframeOrbitMediaItem(media, aspect) {
+  if (!media) return media;
+  const source = media.originalSrc || media.src;
+  if (!source) return { ...media, cropAspect: aspect };
+  return {
+    ...media,
+    src: source,
+    width: media.naturalWidth || media.width,
+    height: media.naturalHeight || media.height,
+    type: dataURLType(source),
+    size: dataURLSize(source),
+    cropAspect: aspect,
+    croppedAt: new Date().toISOString()
+  };
+}
+
+function updateOrbitCardRatio(value) {
+  $$(".hero-preview.hero-orbit .orbit-flow").forEach((flow) => {
+    flow.dataset.cardRatio = value;
+    flow.style.setProperty("--orbit-card-ratio", heroCardRatioCss(value));
+  });
+}
+
+function beginOrbitImageReframeTransition() {
+  const images = $$(".hero-preview.hero-orbit .orbit-flow .media-card").map((card) => $("img", card));
+  images.forEach((image) => image?.classList.remove("is-reframing"));
+  return images;
+}
+
+function finishOrbitImageReframeTransition(images) {
+  window.requestAnimationFrame(() => {
+    images.forEach((image) => image?.classList.remove("is-reframing"));
+  });
+}
+
+function setOrbitImageMedia(image, media, index) {
+  if (!image || !media) return;
+  image.alt = media.name || `作品 ${index + 1}`;
+  image.classList.toggle("media-crop-fit", Boolean(media.cropPosition));
+  if (media.cropPosition) {
+    const x = Math.max(0, Math.min(100, Number(media.cropPosition.x) || 50));
+    const y = Math.max(0, Math.min(100, Number(media.cropPosition.y) || 50));
+    image.style.objectPosition = `${x}% ${y}%`;
+  } else {
+    image.style.removeProperty("object-position");
+  }
+}
+
+async function syncOrbitMediaImage(index, media, request, transitionImages) {
+  const image = transitionImages[index];
+  if (!media || !image || request !== orbitReframeRequest) return;
+  setOrbitImageMedia(image, media, index);
+  image.src = media.src;
+  try {
+    await image.decode?.();
+  } catch {
+    // Browsers can reject decode while a data URL is still loading.
+  }
+  await nextAnimationFrame();
+  if (request === orbitReframeRequest) image.classList.remove("is-reframing");
+}
+
+async function prepareOrbitMediaImage(index, request, transitionImages) {
+  const image = transitionImages[index];
+  if (!image) return true;
+  image.classList.add("is-reframing");
+  await wait(220);
+  return request === orbitReframeRequest;
 }
 
 function openCropModal(index, mediaOverride = null) {
@@ -2103,6 +2380,7 @@ function initOrbitCarousels(root, { autoPlay = true } = {}) {
       { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, saturate: 0.92, z: 2 }
     ];
     const duration = (parseFloat(getComputedStyle(flow).getPropertyValue("--anim-duration")) || 22) * 1000;
+    const orbitPathSpread = state.hero.cardRatio === "16-9" ? 1.12 : 1;
     const sample = (progress) => {
       const normalized = ((progress % 1) + 1) % 1;
       let point = points[0];
@@ -2143,8 +2421,10 @@ function initOrbitCarousels(root, { autoPlay = true } = {}) {
       const height = flow.clientHeight || 1;
       cards.forEach((card, index) => {
         const stateAtPoint = sample(progress + index / cards.length);
-        const offsetX = (stateAtPoint.left - 50) * width / 100;
-        const offsetY = (stateAtPoint.top - 50) * height / 100;
+        const spreadLeft = 50 + (stateAtPoint.left - 50) * orbitPathSpread;
+        const spreadTop = 50 + (stateAtPoint.top - 50) * orbitPathSpread;
+        const offsetX = (spreadLeft - 50) * width / 100;
+        const offsetY = (spreadTop - 50) * height / 100;
         card.style.transform = `translate3d(calc(-50% + ${offsetX.toFixed(3)}px), calc(-50% + ${offsetY.toFixed(3)}px), 0) rotate(18deg) scale(${stateAtPoint.scale.toFixed(4)})`;
         card.style.opacity = stateAtPoint.opacity.toFixed(4);
         card.style.filter = `brightness(${stateAtPoint.brightness.toFixed(4)}) saturate(${stateAtPoint.saturate.toFixed(4)})`;
@@ -2271,7 +2551,7 @@ function renderHeroInteractiveMedia() {
   const items = state.hero.media.slice(0, required);
   if (template === "orbit") {
     const duration = parseFloat(SPEED_MAP[state.hero.speed]);
-    return `<div class="orbit-flow">${items.map((item, index) => {
+    return `<div class="orbit-flow" data-card-ratio="${escapeAttr(state.hero.cardRatio || "auto")}" style="--orbit-card-ratio:${heroCardRatioCss()}">${items.map((item, index) => {
       const delay = -1 * (duration / required) * index;
       return mediaCard(item, index, `--i:${index};--delay:${delay}s`);
     }).join("")}</div>`;
@@ -2320,16 +2600,26 @@ function renderHeroStaticMedia(snapshot = createHeroSnapshot()) {
   try {
     const template = snapshot.templateId;
     const items = snapshot.uploadedImages.slice(0, snapshot.staticConfig.slots);
-    if (template === "totem") return renderVerticalImageStack(items, snapshot.activeIndex);
+    if (template === "totem") return renderVerticalImageStack(items, snapshot.activeIndex, snapshot.styleSettings.totemCardRatio || "auto");
     if (template === "film") return `<div class="circular-gallery image-export-static" data-active-index="${snapshot.activeIndex}">
-      ${items.map((item, index) => circularGalleryItem(item, index)).join("")}
+      ${items.map((item, index) => circularGalleryItem(item, index, snapshot.styleSettings.filmCardRatio || "auto")).join("")}
     </div>`;
     if (template === "orbit") {
       const duration = parseFloat(SPEED_MAP[snapshot.styleSettings.speed] || SPEED_MAP.medium);
-      return `<div class="orbit-flow image-export-static" data-active-index="${snapshot.activeIndex}">${items.map((item, index) => {
+      const cardRatio = snapshot.styleSettings.cardRatio || "auto";
+      return `<div class="orbit-flow image-export-static" data-active-index="${snapshot.activeIndex}" data-card-ratio="${escapeAttr(cardRatio)}" style="--orbit-card-ratio:${heroCardRatioCss(cardRatio)}">${items.map((item, index) => {
         const delay = -1 * (duration / Math.max(snapshot.staticConfig.slots, 1)) * index;
         return mediaCard(item, index, `--i:${index};--delay:${delay}s`);
       }).join("")}</div>`;
+    }
+    if (template === "photo-orbit") {
+      return renderPhotoOrbit(items, snapshot.styleSettings.photoOrbitCardRatio || "auto");
+    }
+    if (template === "ticker-loop") {
+      return renderTickerLoop(items, snapshot.styleSettings.tickerLoopCardRatio || "auto");
+    }
+    if (template === "stellar-gallery") {
+      return renderStellarGallery(items, snapshot.styleSettings.stellarGalleryCardRatio || "auto");
     }
     return renderHeroInteractiveMedia();
   } finally {
@@ -2360,6 +2650,18 @@ function createHeroSnapshot() {
     },
     styleSettings: {
       ratio: state.hero.ratio,
+      cardRatio: state.hero.cardRatio || "auto",
+      filmCardRatio: state.hero.filmCardRatio || "auto",
+      totemCardRatio: state.hero.totemCardRatio || "auto",
+      photoOrbitCardRatio: state.hero.photoOrbitCardRatio || "auto",
+      scrollMorphCardRatio: state.hero.scrollMorphCardRatio || "auto",
+      imageTrailCardRatio: state.hero.imageTrailCardRatio || "auto",
+      threeDCarouselCardRatio: state.hero.threeDCarouselCardRatio || "auto",
+      masonryGalleryCardRatio: state.hero.masonryGalleryCardRatio || "auto",
+      imageGalleryCardRatio: state.hero.imageGalleryCardRatio || "auto",
+      portfolioGalleryCardRatio: state.hero.portfolioGalleryCardRatio || "auto",
+      tickerLoopCardRatio: state.hero.tickerLoopCardRatio || "auto",
+      stellarGalleryCardRatio: state.hero.stellarGalleryCardRatio || "auto",
       speed: state.hero.speed,
       background: normalizeHeroBackground(state.hero.background),
       animationPlaying: state.animationPlaying,
@@ -2419,18 +2721,19 @@ function mediaCard(item, index, style = "") {
   </div>`;
 }
 
-function circularGalleryItem(item, index) {
+function circularGalleryItem(item, index, ratioValue = heroCardRatioValue("film")) {
   const total = currentHeroTemplate().slots;
   const duration = parseFloat(SPEED_MAP[state.hero.speed]);
   const delay = -1 * (duration / total) * index;
-  return `<div class="circular-gallery-item" style="--i:${index};--delay:${delay}s">
+  const cardRatio = heroCardRatioCss(ratioValue, "film");
+  return `<div class="circular-gallery-item" style="--i:${index};--delay:${delay}s;--circular-card-ratio:${cardRatio}">
     <div class="circular-gallery-card">
       ${item ? mediaImage(item, index) : `<span class="placeholder-mark">Slot ${(index % currentHeroTemplate().slots) + 1}</span>`}
     </div>
   </div>`;
 }
 
-function renderPhotoOrbit(items) {
+function renderPhotoOrbit(items, ratioValue = heroCardRatioValue("photo-orbit")) {
   const layouts = [
     { angle: 225, label: "THU" },
     { angle: 270, label: "MADRID" },
@@ -2441,13 +2744,14 @@ function renderPhotoOrbit(items) {
     { angle: 135, label: "ULTIMATE" },
     { angle: 180, label: "2026" }
   ];
-  return `<div class="photo-orbit" tabindex="0" role="region" aria-label="Photo Orbit gallery">
+  const cardRatio = heroCardRatioCss(ratioValue, "photo-orbit");
+  return `<div class="photo-orbit" data-card-ratio="${escapeAttr(ratioValue)}" tabindex="0" role="region" aria-label="Photo Orbit gallery">
     <div class="photo-orbit-ring" aria-hidden="true"></div>
     <div class="photo-orbit-stage">
       ${items.map((item, index) => {
         const layout = layouts[index % layouts.length];
         const alt = item ? escapeHTML(item.name || `作品 ${index + 1}`) : `Slot ${index + 1}`;
-        return `<div class="photo-orbit-card ${item ? "has-media" : "is-placeholder"}" data-angle="${layout.angle}" style="--i:${index};">
+        return `<div class="photo-orbit-card ${item ? "has-media" : "is-placeholder"}" data-angle="${layout.angle}" style="--i:${index};--photo-orbit-card-ratio:${cardRatio};">
           <div class="photo-orbit-surface">
             ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
           </div>
@@ -2508,15 +2812,15 @@ function renderThreeDCarousel(items) {
   </div>`;
 }
 
-function renderStellarGallery(items) {
-  return `<div class="stellar-gallery" tabindex="0" role="region" aria-label="3D Stellar Card Gallery">
+function renderStellarGallery(items, ratioValue = heroCardRatioValue("stellar-gallery")) {
+  const cardRatio = heroCardRatioCss(ratioValue, "stellar-gallery");
+  return `<div class="stellar-gallery" style="--stellar-card-ratio:${cardRatio};" tabindex="0" role="region" aria-label="3D Stellar Card Gallery">
     <div class="stellar-starfield" aria-hidden="true"></div>
     <div class="stellar-shell">
       <div class="stellar-galaxy">
         ${items.map((item, index) => {
           const alt = item ? escapeHTML(item.name || `浣滃搧 ${index + 1}`) : `Slot ${index + 1}`;
-          const ratio = item?.width && item?.height ? `${item.width} / ${item.height}` : "4 / 5";
-          return `<button class="stellar-card ${item ? "has-media" : "is-placeholder"}" data-index="${index}" style="--stellar-media-ratio:${ratio};" type="button" aria-label="View stellar image ${index + 1}">
+          return `<button class="stellar-card ${item ? "has-media" : "is-placeholder"}" data-index="${index}" type="button" aria-label="View stellar image ${index + 1}">
             <span class="stellar-card-surface">
               ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
             </span>
@@ -2567,8 +2871,9 @@ function renderImageGallery(items) {
   </div>`;
 }
 
-function renderPortfolioGallery(items) {
-  return `<div class="portfolio-gallery" tabindex="0" role="region" aria-label="Portfolio Gallery">
+function renderPortfolioGallery(items, ratioValue = heroCardRatioValue("portfolio-gallery")) {
+  const cardRatio = heroCardRatioCss(ratioValue, "portfolio-gallery");
+  return `<div class="portfolio-gallery" style="--portfolio-card-ratio:${cardRatio};" tabindex="0" role="region" aria-label="Portfolio Gallery">
     <div class="portfolio-gallery-track">
       ${items.map((item, index) => {
         const alt = item ? escapeHTML(item.name || `作品 ${index + 1}`) : `Slot ${index + 1}`;
@@ -2582,7 +2887,11 @@ function renderPortfolioGallery(items) {
   </div>`;
 }
 
-function renderTickerLoop(items) {
+function renderTickerLoop(items, ratioValue = heroCardRatioValue("ticker-loop")) {
+  const cardRatio = heroCardRatioCss(ratioValue, "ticker-loop");
+  const cardWidth = ratioValue === "4-3" ? "168px" : ratioValue === "16-9" ? "210px" : "120px";
+  const cardShiftX = ratioValue === "16-9" ? "-64px" : ratioValue === "4-3" ? "-40px" : "0px";
+  const cardShiftY = ratioValue === "16-9" ? "-64px" : ratioValue === "4-3" ? "-40px" : "0px";
   const baseDuration = parseFloat(SPEED_MAP[state.hero.speed]) || 22;
   const rowDurations = [
     baseDuration * 1.45,
@@ -2644,7 +2953,7 @@ function renderTickerLoop(items) {
     return `<div class="ticker-loop-row" style="--ticker-duration:${rowDurations[row].toFixed(2)}s;--ticker-direction:${row % 2 === 1 ? "normal" : "reverse"}">${cards}</div>`;
   }).join("");
 
-  return `<div class="ticker-loop" tabindex="0" role="region" aria-label="Ticker Loop gallery">
+  return `<div class="ticker-loop" style="--ticker-card-ratio:${cardRatio};--ticker-card-width:${cardWidth};--ticker-shift-x:${cardShiftX};--ticker-shift-y:${cardShiftY};" tabindex="0" role="region" aria-label="Ticker Loop gallery">
     <div class="ticker-loop-grid">${rows}</div>
   </div>`;
 }
@@ -2675,14 +2984,15 @@ function renderZoomParallax(items) {
   </div>`;
 }
 
-function renderVerticalImageStack(items, currentOverride = null) {
+function renderVerticalImageStack(items, currentOverride = null, ratioValue = heroCardRatioValue("totem")) {
   const total = Math.max(items.length, 1);
   const currentSource = currentOverride == null ? (state.hero.totemIndex || state.hero.activeIndex || 0) : currentOverride;
   const current = ((currentSource || 0) % total + total) % total;
-  return `<div class="vertical-image-stack" data-current="${current}" tabindex="0" role="region" aria-label="Vertical image stack">
+  const cardWidthRatio = heroCardRatioAspect(ratioValue, "totem");
+  return `<div class="vertical-image-stack" data-current="${current}" style="--totem-card-width:calc(var(--totem-card-height) * ${cardWidthRatio});" tabindex="0" role="region" aria-label="Vertical image stack">
     <div class="vertical-stack-glow"></div>
     <div class="vertical-stack-stage">
-      ${items.map((item, index) => verticalStackCard(item, index, current, total)).join("")}
+      ${items.map((item, index) => verticalStackCard(item, index, current, total, ratioValue)).join("")}
     </div>
     <div class="vertical-stack-counter" aria-hidden="true">
       <span class="vertical-stack-current">${String(current + 1).padStart(2, "0")}</span>
@@ -2699,10 +3009,11 @@ function renderVerticalImageStack(items, currentOverride = null) {
   </div>`;
 }
 
-function verticalStackCard(item, index, current, total) {
+function verticalStackCard(item, index, current, total, ratioValue = heroCardRatioValue("totem")) {
   const style = verticalStackStyle(index, current, total);
+  const cardRatio = heroCardRatioCss(ratioValue, "totem");
   const title = item ? escapeHTML(item.name || `作品 ${index + 1}`) : `Slot ${index + 1}`;
-  return `<div class="vertical-stack-card ${index === current ? "is-current" : ""} ${item ? "has-media" : "is-placeholder"}" data-stack-card="${index}" style="--stack-y:${style.y}px;--stack-depth:${style.depth}px;--stack-scale:${style.scale};--stack-opacity:${style.opacity};--stack-rotate:${style.rotateX}deg;--stack-z:${style.zIndex};">
+  return `<div class="vertical-stack-card ${index === current ? "is-current" : ""} ${item ? "has-media" : "is-placeholder"}" data-stack-card="${index}" style="--stack-y:${style.y}px;--stack-depth:${style.depth}px;--stack-scale:${style.scale};--stack-opacity:${style.opacity};--stack-rotate:${style.rotateX}deg;--stack-z:${style.zIndex};--stack-card-ratio:${cardRatio};">
     <div class="vertical-stack-frame">
       <div class="vertical-stack-shine"></div>
       ${item ? mediaImage(item, index, `draggable="false"`) : `<span class="placeholder-mark">Slot ${index + 1}</span>`}
@@ -4397,6 +4708,7 @@ function initScrollMorphs(root) {
       "4-5": 4 / 5,
       "9-16": 9 / 16
     }[state.hero.ratio] || 16 / 9;
+    const cardAspect = heroCardRatioAspect(heroCardRatioValue("scroll-morph"), "scroll-morph");
     const local = {
       offset: 0,
       lastTime: performance.now(),
@@ -4417,9 +4729,9 @@ function initScrollMorphs(root) {
       const cardWidth = Math.max(132, Math.min(
         isPhone ? 210 : 320,
         width * (isPhone ? 0.31 : 0.22),
-        (logicalHeight * 0.72) / (4 / 3)
+        logicalHeight * 0.72 * cardAspect
       ));
-      const cardHeight = cardWidth * (4 / 3);
+      const cardHeight = cardWidth / cardAspect;
       const spacing = isPhone ? Math.max(140, cardWidth * 0.96) : Math.min(300, Math.max(190, width * 0.22));
       container.style.setProperty("--sm-card-width", `${cardWidth}px`);
       container.style.setProperty("--sm-card-height", `${cardHeight}px`);
@@ -4526,6 +4838,8 @@ function initImageTrails(root) {
     if (!stage || !cards.length) return;
 
     const waveDuration = state.hero.speed === "fast" ? 6 : state.hero.speed === "slow" ? 12 : 9;
+    const cardAspect = heroCardRatioAspect(heroCardRatioValue("image-trail"), "image-trail");
+    const defaultCardAspect = 2 / 3;
     const local = { measureFrame: 0 };
     const measure = () => {
       const width = Math.max(stage.clientWidth, 280);
@@ -4534,9 +4848,9 @@ function initImageTrails(root) {
       const cardWidth = Math.max(82, Math.min(
         isPhone ? 156 : 220,
         width * (isPhone ? 0.3 : 0.16),
-        height * 0.34
+        height * 0.34 * (cardAspect / defaultCardAspect)
       ));
-      const cardHeight = cardWidth * 1.5;
+      const cardHeight = cardWidth / cardAspect;
       const gap = cardWidth * (isPhone ? 0.9 : 1.02);
       const waveOffsets = [0, 0.38, 0, -0.38, 0, 0.38, 0];
       stage.style.setProperty("--it-card-width", `${cardWidth}px`);
@@ -4587,6 +4901,16 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
     if (!ring || !cards.length) return;
 
     const speed = state.hero.speed === "fast" ? 0.024 : state.hero.speed === "slow" ? 0.008 : 0.014;
+    const cardAspect = heroCardRatioAspect(heroCardRatioValue("three-d-carousel"), "three-d-carousel");
+    const defaultCardAspect = 3 / 4;
+    const ratioValue = heroCardRatioValue("three-d-carousel");
+    const isCustomRatio = ratioValue !== "auto";
+    const cardScale = ratioValue === "16-9"
+      ? 1.56
+      : ratioValue === "4-3" ? 1.24
+      : isCustomRatio ? 1.1 : 1;
+    const radiusScale = ratioValue === "16-9" ? 1.68 : isCustomRatio ? 2.08 : 2.3;
+    const radiusSpread = ratioValue === "16-9" ? 3.1 : isCustomRatio ? 2.6 : 2.35;
     const motion = {
       rotation: 0,
       targetRotation: 0,
@@ -4608,9 +4932,13 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
       const width = container.clientWidth || 1;
       const height = container.clientHeight || 1;
       const count = cards.length;
-      const cardWidth = Math.max(96, Math.min(220, width * 0.21, height * 0.38));
-      const cardHeight = cardWidth * (4 / 3);
-      const radius = Math.max(cardWidth * 2.3, (cardWidth * count) / (Math.PI * 2.35));
+      const cardWidth = Math.max(96, Math.min(220, width * 0.21, height * 0.38 * (cardAspect / defaultCardAspect)))
+        * cardScale;
+      const cardHeight = cardWidth / cardAspect;
+      const radius = Math.max(
+        cardWidth * radiusScale,
+        (cardWidth * count) / (Math.PI * radiusSpread)
+      );
       ring.style.setProperty("--carousel-card-width", `${cardWidth}px`);
       ring.style.setProperty("--carousel-card-height", `${cardHeight}px`);
       ring.style.setProperty("--carousel-radius", `${radius}px`);
@@ -4780,6 +5108,8 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
     const expanded = $(".stellar-expanded", container);
     const close = $(".stellar-close", container);
     if (!galaxy || !cards.length) return;
+    const ratioValue = heroCardRatioValue("stellar-gallery");
+    const cardAspect = heroCardRatioAspect(heroCardRatioValue("stellar-gallery"), "stellar-gallery");
     const overlayHome = overlay?.parentNode || null;
     let overlayCloseTimer = 0;
 
@@ -4871,9 +5201,11 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
       const width = container.clientWidth || 1;
       const height = container.clientHeight || 1;
       const shortSide = Math.min(width, height);
-      const cardWidth = Math.max(1, Math.round(clamp(shortSide * 0.168, 70, 142)));
-      const radiusX = clamp(width * 0.31, cardWidth * 2.85, width * 0.42);
-      const radiusY = clamp(height * 0.37, cardWidth * 2.05, height * 0.46);
+      const cardScale = ratioValue === "16-9" ? 2 : ratioValue === "4-3" ? 1.5 : ratioValue === "9-16" ? 1.15 : ratioValue === "1-1" ? 1.18 : 1;
+      const baseCardWidth = Math.max(1, Math.round(clamp(shortSide * 0.168, 70, 142)));
+      const cardWidth = Math.max(1, Math.round(baseCardWidth * cardScale));
+      const radiusX = clamp(width * 0.31, baseCardWidth * 2.85, width * 0.42);
+      const radiusY = clamp(height * 0.37, baseCardWidth * 2.05, height * 0.46);
       const radiusZ = Math.min(radiusX, radiusY) * 0.92;
       const perspective = Math.max(700, shortSide * 1.75);
       const cameraScale = clamp(0.99 + (motion.zoom - 1) * 0.08, 0.97, 1.05);
@@ -4924,7 +5256,7 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
         const displayTiltX = zoomed ? tiltX * (1 - zoomProgress * 0.35) : tiltX;
         const renderScale = zoomed ? 1 + zoomProgress * 1.75 : 1;
         const renderWidth = Math.max(1, cardWidth * scale * renderScale);
-        const renderHeight = Math.max(1, renderWidth * 1.25);
+        const renderHeight = Math.max(1, renderWidth / cardAspect);
         const displayScale = 1;
         const hideDepth = point.depthHidden ? 0.50 : 0.42;
         const depthHidden = !zoomed && !anyZooming && depth < hideDepth;
@@ -4948,7 +5280,7 @@ function initStellarGalleries(root, { autoPlay = true } = {}) {
           depth
         };
       });
-      const margin = clamp(cardWidth * 0.14, 10, 18);
+      const margin = clamp(baseCardWidth * 0.14, 10, 18);
       projected.forEach((item) => {
         item.boxW = item.renderWidth;
         item.boxH = item.renderHeight;
@@ -5422,6 +5754,8 @@ function initImageGalleries(root) {
     const positions = items.map((_, index) => index - 1);
     const moveDuration = 760;
     const pauseDuration = 1500;
+    const cardAspect = heroCardRatioAspect(heroCardRatioValue("image-gallery"), "image-gallery");
+    const defaultCardAspect = 3 / 4;
     let moveTimer = 0;
     let resetTimer = 0;
     let moving = false;
@@ -5430,8 +5764,8 @@ function initImageGalleries(root) {
       const width = gallery.clientWidth || 1;
       const height = gallery.clientHeight || 1;
       const count = Math.min(items.length, 8);
-      const cardWidth = Math.max(120, Math.min(220, width * 0.21, height * 0.4));
-      const cardHeight = cardWidth * (4 / 3);
+      const cardWidth = Math.max(120, Math.min(220, width * 0.21, height * 0.4 * (cardAspect / defaultCardAspect)));
+      const cardHeight = cardWidth / cardAspect;
       const step = Math.min(cardWidth * 0.82, width * 0.155);
       const offsets = [-3, -2, -1, 0, 1, 2, 3];
       const scales = [0.72, 0.86, 0.96, 1.24, 0.96, 0.86, 0.72];
