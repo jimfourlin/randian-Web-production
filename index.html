@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RD作品集网页设计模板</title>
-    <link rel="stylesheet" href="styles.css?v=card-ratio-crop-20260727-52" />
+    <link rel="stylesheet" href="styles.css?v=card-ratio-crop-20260728-95" />
     <style>
       .panel-section:has(#styleTarget) {
         display: none !important;
@@ -3493,7 +3493,8 @@ label span,
 
 .orbit-flow .media-card {
   width: clamp(112px, 19%, 168px);
-  height: clamp(160px, 34%, 240px);
+  height: auto;
+  aspect-ratio: var(--orbit-card-ratio, 1 / 1);
   left: 50%;
   top: 50%;
   transform-origin: center center;
@@ -3503,6 +3504,11 @@ label span,
   backface-visibility: hidden;
 }
 
+/* The narrow 9:16 canvas needs a larger orbit without changing other canvas ratios. */
+.canvas-frame.ratio-9-16 .hero-preview.hero-orbit .orbit-flow .media-card {
+  width: clamp(144px, 24%, 216px);
+}
+
 .orbit-flow .media-card > img {
   display: block;
   width: calc(100% + 2px);
@@ -3510,6 +3516,9 @@ label span,
   max-width: none;
   margin: -1px;
   object-fit: cover;
+  opacity: 1;
+  transition: opacity 480ms ease-in-out;
+  will-change: opacity;
 }
 
 @keyframes orbitLoop {
@@ -3641,6 +3650,46 @@ label span,
     filter 220ms ease;
   will-change: transform, opacity, filter;
   pointer-events: auto;
+}
+
+.canvas-frame.ratio-4-3 .hero-preview.hero-photo-orbit .photo-orbit-card {
+  width: clamp(120px, 26%, 210px);
+}
+
+.canvas-frame.ratio-1-1 .hero-preview.hero-photo-orbit .photo-orbit-card {
+  width: clamp(140px, 33%, 260px);
+}
+
+.canvas-frame.ratio-1-1 .hero-preview.hero-photo-orbit .photo-orbit {
+  --photo-orbit-radius-scale: 1.40;
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-photo-orbit .photo-orbit-card {
+  width: clamp(140px, 33%, 260px);
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-photo-orbit .photo-orbit {
+  --photo-orbit-radius-scale: 1.60;
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-photo-orbit .photo-orbit-surface {
+  border-radius: clamp(8px, 1.6vw, 14px);
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-photo-orbit .photo-orbit-card {
+  width: clamp(140px, 33%, 260px);
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-photo-orbit .photo-orbit {
+  --photo-orbit-radius-scale: 1.80;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-photo-orbit .photo-orbit-surface {
+  border-radius: clamp(8px, 1.6vw, 14px);
+}
+
+.canvas-frame.ratio-4-3 .hero-preview.hero-photo-orbit .photo-orbit[data-card-ratio="4-3"] .photo-orbit-card {
+  width: clamp(140px, 31%, 250px);
 }
 
 .photo-orbit-surface {
@@ -4543,10 +4592,14 @@ label span,
   border-radius: var(--media-radius, 8px);
   scroll-behavior: smooth;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .masonry-gallery::-webkit-scrollbar {
-  width: 8px;
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .masonry-gallery::-webkit-scrollbar-thumb {
@@ -4576,7 +4629,7 @@ label span,
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: var(--media-radius, 8px);
+  border-radius: 6px;
   border: var(--media-border, 1px solid rgba(255, 255, 255, 0.16));
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.13), transparent 38%),
@@ -4590,6 +4643,14 @@ label span,
     transform 1000ms cubic-bezier(0.16, 1, 0.3, 1),
     filter 1000ms ease;
   transition-delay: var(--masonry-delay, 0ms);
+}
+
+/* Keep the narrow canvas layouts dense without changing the default 16:9 spacing. */
+.canvas-frame.ratio-4-5 .hero-preview.hero-masonry-gallery .masonry-gallery-grid,
+.canvas-frame.ratio-4-5 .hero-preview.hero-masonry-gallery .masonry-gallery-column,
+.canvas-frame.ratio-9-16 .hero-preview.hero-masonry-gallery .masonry-gallery-grid,
+.canvas-frame.ratio-9-16 .hero-preview.hero-masonry-gallery .masonry-gallery-column {
+  gap: clamp(6px, 1vw, 10px);
 }
 
 .masonry-gallery-card.is-visible {
@@ -4794,6 +4855,17 @@ label span,
   line-height: 1;
   letter-spacing: 0;
   pointer-events: none;
+}
+
+/* Keep focus-carousel content proportional on narrow canvas layouts. */
+.canvas-frame.ratio-4-5 .hero-preview.hero-image-gallery .image-gallery-card,
+.canvas-frame.ratio-9-16 .hero-preview.hero-image-gallery .image-gallery-card {
+  border-radius: clamp(8px, 0.8vw, 12px);
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-image-gallery .image-gallery-placeholder,
+.canvas-frame.ratio-9-16 .hero-preview.hero-image-gallery .image-gallery-placeholder {
+  font-size: clamp(8px, 0.8vw, 12px);
 }
 
 .hero-bg-ivory .image-gallery-card {
@@ -6107,11 +6179,116 @@ label span,
 }
 
 .canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-stack-counter {
-  left: 10px;
+  left: 8% !important;
+  right: auto !important;
+  z-index: 200 !important;
+  transform: translate(-50%, -50%) scale(0.72) !important;
 }
 
 .canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-stack-dots {
-  right: 29px;
+  right: 8% !important;
+  left: auto !important;
+  z-index: 200 !important;
+  transform: translate(50%, -50%) scale(0.72) !important;
+}
+
+/* Narrow canvases need protected side lanes around wide cards. */
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"],
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="3-4"],
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"],
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] {
+  --totem-side-gap: clamp(90px, 20%, 132px);
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"] .vertical-stack-card {
+  width: min(calc(100% - (2 * var(--totem-side-gap))), 360px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="3-4"] .vertical-stack-card {
+  width: min(calc(100% - (2 * var(--totem-side-gap))), 330px);
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"] .vertical-stack-card,
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-card {
+  width: min(calc(100% - (2 * var(--totem-side-gap))), 400px);
+  height: auto;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"] .vertical-stack-counter,
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="3-4"] .vertical-stack-counter,
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"] .vertical-stack-counter,
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-counter {
+  left: calc(var(--totem-side-gap) / 2) !important;
+  transform: translate(-50%, -50%) scale(0.72) !important;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"] .vertical-stack-dots,
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="3-4"] .vertical-stack-dots,
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"] .vertical-stack-dots,
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-dots {
+  right: calc(var(--totem-side-gap) / 2) !important;
+  transform: translate(50%, -50%) scale(0.72) !important;
+}
+
+/* Give the 16:9 card more room while keeping its controls in protected side lanes. */
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] {
+  --totem-side-gap: clamp(58px, 13%, 86px);
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-card {
+  width: min(calc(100% - (2 * var(--totem-side-gap))), 440px);
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-stage {
+  width: 100%;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-frame {
+  border-radius: 14px;
+}
+
+/* Reserve fixed side gaps for controls when 4:5 uses wide card ratios. */
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"],
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"],
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] {
+  --totem-side-gap: clamp(96px, 16%, 140px);
+  --totem-ratio-card-width: calc(100% - (2 * var(--totem-side-gap)));
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"] .vertical-stack-stage,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"] .vertical-stack-stage,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-stage {
+  width: 100%;
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"] .vertical-stack-card,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"] .vertical-stack-card,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-card {
+  width: var(--totem-ratio-card-width);
+  height: auto;
+  aspect-ratio: var(--stack-card-ratio, 2 / 3);
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"] .vertical-stack-counter,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"] .vertical-stack-counter,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-counter {
+  left: calc(var(--totem-side-gap) / 2);
+  z-index: 200;
+  transform: translate(-50%, -50%) scale(0.78);
+}
+
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="1-1"] .vertical-stack-dots,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="4-3"] .vertical-stack-dots,
+.canvas-frame.ratio-4-5 .hero-preview.hero-totem .vertical-image-stack[data-card-ratio="16-9"] .vertical-stack-dots {
+  right: calc(var(--totem-side-gap) / 2);
+  z-index: 200;
+  transform: translate(50%, -50%) scale(0.78);
 }
 
 .vertical-stack-hint {
@@ -6336,6 +6513,52 @@ label span,
   .zoom-parallax-layer:nth-child(5) { left: 52% !important; top: 54% !important; width: 44% !important; height: auto !important; }
   .zoom-parallax-layer:nth-child(6) { left: 4% !important; top: 76% !important; width: 44% !important; height: auto !important; }
   .zoom-parallax-layer:nth-child(7) { left: 52% !important; top: 76% !important; width: 44% !important; height: 20% !important; }
+}
+
+/* Keep Mosaic Grid's middle cards filling their cells and sharing the side-card baseline. */
+.canvas-frame.ratio-1-1 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(3),
+.canvas-frame.ratio-1-1 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(4),
+.canvas-frame.ratio-1-1 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-1-1 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(3),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(4),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6),
+.canvas-frame.ratio-4-5 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(3),
+.canvas-frame.ratio-4-5 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(4),
+.canvas-frame.ratio-4-5 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-4-5 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6) {
+  height: 27% !important;
+  aspect-ratio: auto !important;
+}
+
+.canvas-frame.ratio-1-1 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-1-1 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6),
+.canvas-frame.ratio-4-5 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-4-5 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6) {
+  top: 69% !important;
+}
+
+.canvas-frame.ratio-9-16 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(3),
+.canvas-frame.ratio-9-16 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(4),
+.canvas-frame.ratio-9-16 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-9-16 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6) {
+  height: 20% !important;
+  aspect-ratio: auto !important;
+}
+
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(3),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(4),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6) {
+  height: 22.5% !important;
+}
+
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(5),
+.canvas-frame.ratio-4-3 .hero-preview.hero-mosaic .zoom-parallax-layer:nth-child(6) {
+  top: 73.5% !important;
 }
 
 .zoom-parallax:has(.zoom-parallax-layer.is-active) .zoom-parallax-layer:not(.is-active) {
@@ -10103,6 +10326,6 @@ html.image-export *,
 </script>
 
     <script src="html2canvas.min.js"></script>
-    <script src="app.js?v=card-ratio-crop-20260727-54"></script>
+    <script src="app.js?v=card-ratio-crop-20260728-95"></script>
   </body>
 </html>

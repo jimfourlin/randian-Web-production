@@ -2380,7 +2380,9 @@ function initOrbitCarousels(root, { autoPlay = true } = {}) {
       { p: 1, left: 50, top: 15, scale: 0.72, opacity: 0.58, brightness: 0.84, saturate: 0.92, z: 2 }
     ];
     const duration = (parseFloat(getComputedStyle(flow).getPropertyValue("--anim-duration")) || 22) * 1000;
-    const orbitPathSpread = state.hero.cardRatio === "16-9" ? 1.12 : 1;
+    const canvasRatio = editorCanvasRatioKey();
+    const orbitPathSpreadX = canvasRatio === "9-16" ? 1.744 : state.hero.cardRatio === "16-9" ? 1.12 : 1;
+    const orbitPathSpreadY = canvasRatio === "9-16" ? 1.48 : state.hero.cardRatio === "16-9" ? 1.12 : 1;
     const sample = (progress) => {
       const normalized = ((progress % 1) + 1) % 1;
       let point = points[0];
@@ -2421,8 +2423,8 @@ function initOrbitCarousels(root, { autoPlay = true } = {}) {
       const height = flow.clientHeight || 1;
       cards.forEach((card, index) => {
         const stateAtPoint = sample(progress + index / cards.length);
-        const spreadLeft = 50 + (stateAtPoint.left - 50) * orbitPathSpread;
-        const spreadTop = 50 + (stateAtPoint.top - 50) * orbitPathSpread;
+        const spreadLeft = 50 + (stateAtPoint.left - 50) * orbitPathSpreadX;
+        const spreadTop = 50 + (stateAtPoint.top - 50) * orbitPathSpreadY;
         const offsetX = (spreadLeft - 50) * width / 100;
         const offsetY = (spreadTop - 50) * height / 100;
         card.style.transform = `translate3d(calc(-50% + ${offsetX.toFixed(3)}px), calc(-50% + ${offsetY.toFixed(3)}px), 0) rotate(18deg) scale(${stateAtPoint.scale.toFixed(4)})`;
@@ -2989,7 +2991,7 @@ function renderVerticalImageStack(items, currentOverride = null, ratioValue = he
   const currentSource = currentOverride == null ? (state.hero.totemIndex || state.hero.activeIndex || 0) : currentOverride;
   const current = ((currentSource || 0) % total + total) % total;
   const cardWidthRatio = heroCardRatioAspect(ratioValue, "totem");
-  return `<div class="vertical-image-stack" data-current="${current}" style="--totem-card-width:calc(var(--totem-card-height) * ${cardWidthRatio});" tabindex="0" role="region" aria-label="Vertical image stack">
+  return `<div class="vertical-image-stack" data-current="${current}" data-card-ratio="${escapeAttr(ratioValue)}" style="--totem-card-width:calc(var(--totem-card-height) * ${cardWidthRatio});" tabindex="0" role="region" aria-label="Vertical image stack">
     <div class="vertical-stack-glow"></div>
     <div class="vertical-stack-stage">
       ${items.map((item, index) => verticalStackCard(item, index, current, total, ratioValue)).join("")}
@@ -4574,7 +4576,8 @@ function initPhotoOrbits(root) {
     const applyOrbit = () => {
       const width = orbit.clientWidth || 1;
       const height = orbit.clientHeight || 1;
-      const radius = Math.max(82, Math.min(width, height) * 0.34);
+      const radiusScale = Number.parseFloat(getComputedStyle(orbit).getPropertyValue("--photo-orbit-radius-scale")) || 1;
+      const radius = Math.max(82, Math.min(width, height) * 0.34 * radiusScale);
       cards.forEach((card) => {
         const base = Number(card.dataset.angle || 0) * Math.PI / 180;
         const angle = base + motion.phase;
@@ -4726,13 +4729,17 @@ function initScrollMorphs(root) {
       // Preview mode can expose a short intermediate grid row while it switches layouts.
       // Use the canvas ratio as the lower bound so the first measurement cannot shrink cards.
       const logicalHeight = Math.max(height, width / canvasAspect);
-      const cardWidth = Math.max(132, Math.min(
-        isPhone ? 210 : 320,
-        width * (isPhone ? 0.31 : 0.22),
+      const isTallCanvas = state.hero.ratio === "9-16";
+      const canvasScale = state.hero.ratio === "4-5" ? 0.8 : 1;
+      const baseCardWidth = Math.max(132, Math.min(
+        isTallCanvas ? 310 : isPhone ? 210 : 320,
+        width * (isTallCanvas ? 0.66 : isPhone ? 0.31 : 0.22),
         logicalHeight * 0.72 * cardAspect
       ));
+      const cardWidth = baseCardWidth * canvasScale;
       const cardHeight = cardWidth / cardAspect;
-      const spacing = isPhone ? Math.max(140, cardWidth * 0.96) : Math.min(300, Math.max(190, width * 0.22));
+      const baseSpacing = isPhone ? Math.max(140, baseCardWidth * 0.96) : Math.min(300, Math.max(190, width * 0.22));
+      const spacing = baseSpacing * canvasScale;
       container.style.setProperty("--sm-card-width", `${cardWidth}px`);
       container.style.setProperty("--sm-card-height", `${cardHeight}px`);
       container.style.setProperty("--sm-glow-height", `${(cardHeight * 0.72).toFixed(2)}px`);
@@ -5066,9 +5073,20 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
     container.addEventListener("pointercancel", onPointerUp);
     container.addEventListener("wheel", onWheel, { passive: false });
     container.addEventListener("keydown", onKeyDown);
-    window.addEventListener("resize", layout);
+    let layoutFrame = 0;
+    const scheduleLayout = () => {
+      if (layoutFrame) window.cancelAnimationFrame(layoutFrame);
+      layoutFrame = window.requestAnimationFrame(() => {
+        layoutFrame = 0;
+        layout();
+      });
+    };
+    const resizeObserver = "ResizeObserver" in window ? new ResizeObserver(scheduleLayout) : null;
+    resizeObserver?.observe(container);
+    window.addEventListener("resize", scheduleLayout);
 
     layout();
+    scheduleLayout();
     apply();
     motion.frame = window.requestAnimationFrame(tick);
 
@@ -5085,7 +5103,9 @@ function initThreeDCarousels(root, { autoPlay = true } = {}) {
       container.removeEventListener("pointercancel", onPointerUp);
       container.removeEventListener("wheel", onWheel);
       container.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("resize", layout);
+      if (layoutFrame) window.cancelAnimationFrame(layoutFrame);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", scheduleLayout);
       if (overlay) {
         overlay.classList.remove("is-open");
         overlay.setAttribute("aria-hidden", "true");
@@ -5764,7 +5784,14 @@ function initImageGalleries(root) {
       const width = gallery.clientWidth || 1;
       const height = gallery.clientHeight || 1;
       const count = Math.min(items.length, 8);
-      const cardWidth = Math.max(120, Math.min(220, width * 0.21, height * 0.4 * (cardAspect / defaultCardAspect)));
+      const canvasFrame = gallery.closest(".canvas-frame");
+      const isTallCanvas = canvasFrame?.classList.contains("ratio-9-16");
+      const isNarrowCanvas = canvasFrame?.classList.contains("ratio-4-5") || isTallCanvas;
+      const cardWidth = isTallCanvas
+        ? Math.max(150, Math.min(250, width * 0.27, height * 0.4 * (cardAspect / defaultCardAspect)))
+        : isNarrowCanvas
+        ? Math.max(136, Math.min(240, width * 0.24, height * 0.4 * (cardAspect / defaultCardAspect)))
+        : Math.max(120, Math.min(220, width * 0.21, height * 0.4 * (cardAspect / defaultCardAspect)));
       const cardHeight = cardWidth / cardAspect;
       const step = Math.min(cardWidth * 0.82, width * 0.155);
       const offsets = [-3, -2, -1, 0, 1, 2, 3];
@@ -7349,7 +7376,8 @@ async function buildPublishedDocument(options = {}) {
           function applyOrbit() {
             var width = orbit.clientWidth || 1;
             var height = orbit.clientHeight || 1;
-            var radius = Math.max(82, Math.min(width, height) * 0.34);
+            var radiusScale = Number.parseFloat(getComputedStyle(orbit).getPropertyValue("--photo-orbit-radius-scale")) || 1;
+            var radius = Math.max(82, Math.min(width, height) * 0.34 * radiusScale);
             cards.forEach(function(card) {
               var base = Number(card.dataset.angle || 0) * Math.PI / 180;
               var angle = base + motion.phase;
@@ -7524,8 +7552,19 @@ async function buildPublishedDocument(options = {}) {
           if (overlay) overlay.addEventListener("click", function(event) {
             if (event.target === overlay) closeOverlay();
           });
-          window.addEventListener("resize", layout);
+          var layoutFrame = 0;
+          function scheduleLayout() {
+            if (layoutFrame) window.cancelAnimationFrame(layoutFrame);
+            layoutFrame = window.requestAnimationFrame(function() {
+              layoutFrame = 0;
+              layout();
+            });
+          }
+          var resizeObserver = "ResizeObserver" in window ? new ResizeObserver(scheduleLayout) : null;
+          if (resizeObserver) resizeObserver.observe(container);
+          window.addEventListener("resize", scheduleLayout);
           layout();
+          scheduleLayout();
           apply();
           motion.frame = window.requestAnimationFrame(tick);
         });
@@ -8192,9 +8231,13 @@ async function buildPublishedDocument(options = {}) {
              var height = Math.max(container.clientHeight, 260);
              var isPhone = width <= 560;
              var logicalHeight = Math.max(height, width / canvasAspect);
-             var cardWidth = Math.max(132, Math.min(isPhone ? 210 : 320, width * (isPhone ? 0.31 : 0.22), (logicalHeight * 0.72) / (4 / 3)));
-            var cardHeight = cardWidth * (4 / 3);
-            var spacing = isPhone ? Math.max(140, cardWidth * 0.96) : Math.min(300, Math.max(190, width * 0.22));
+             var isTallCanvas = ${state.hero.ratio === "9-16" ? "true" : "false"};
+             var canvasScale = ${state.hero.ratio === "4-5" ? "0.8" : "1"};
+             var baseCardWidth = Math.max(132, Math.min(isTallCanvas ? 310 : isPhone ? 210 : 320, width * (isTallCanvas ? 0.66 : isPhone ? 0.31 : 0.22), (logicalHeight * 0.72) / (4 / 3)));
+             var cardWidth = baseCardWidth * canvasScale;
+             var cardHeight = cardWidth * (4 / 3);
+            var baseSpacing = isPhone ? Math.max(140, baseCardWidth * 0.96) : Math.min(300, Math.max(190, width * 0.22));
+            var spacing = baseSpacing * canvasScale;
             container.style.setProperty("--sm-card-width", cardWidth + "px");
             container.style.setProperty("--sm-card-height", cardHeight + "px");
             container.style.setProperty("--sm-glow-height", (cardHeight * 0.72).toFixed(2) + "px");
