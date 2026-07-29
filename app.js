@@ -110,15 +110,15 @@ const ABOUT_LAYOUTS = [
 const ABOUT_LABEL_DEFAULTS = {
   personal: "个人信息",
   contact: "联系",
-  experience: "工作经历",
-  education: "教育背景",
-  awards: "奖项",
-  clients: "合作客户",
+  experience: "工作经历 Work Experience",
+  education: "教育背景 Education",
+  awards: "奖项 Awards",
+  clients: "合作客户 Selected Clients",
   portfolio: "Portfolio",
   skills: "技能",
   software: "软件使用",
-  services: "服务范围",
-  availability: "合作状态"
+  services: "服务范围 Service Scope",
+  availability: "合作状态 Collaboration Status"
 };
 
 const ABOUT_SUBLABEL_DEFAULTS = {
@@ -229,6 +229,8 @@ let lastTotemNavigationTime = 0;
 let editingSoftwareSkillId = null;
 let draggedSoftwareSkillId = "";
 let activeSlotDrag = null;
+let batchDeleteMode = false;
+const batchDeleteSelection = new Set();
 let customSelectSyncs = [];
 const svgAssetUrlCache = new Map();
 const svgAssetPromises = new Map();
@@ -283,19 +285,19 @@ function makeDefaultState() {
     },
     about: {
       layout: "minimal",
-      name: "白无常",
-      title: "Creative Director / Visual Designer",
-      bio: "以克制的视觉系统、清晰的信息层级和动态叙事，帮助品牌把复杂想法变成可被感知的体验。",
+      name: "燃点RANDIAN",
+      title: "3D Creative Artist / 3D Visual Designer",
+      bio: "以写实与风格化三维视觉、材质光影，将概念创意转化为具备氛围感与商业表现力的数字三维视觉体验。",
       portrait: null,
-      skills: "Brand System, Art Direction, Motion, Editorial, Web Experience",
-      experience: "2022 - Now｜Independent Creative Director｜品牌视觉、网站体验与发布活动\n2018 - 2022｜Studio Lead｜带领跨职能团队完成数字产品与展览项目",
-      education: "MA Visual Communication｜Central Saint Martins\nBA Graphic Design｜Tongji University",
-      awards: "ADC Awards Shortlist\nD&AD Wood Pencil\nTokyo TDC Selected",
-      clients: "Aesop, Nike, Leica, Muji, Vitra",
-      services: "品牌系统, 艺术指导, 网站体验, 动态视觉, 作品集策展",
-      availability: "2026 Q3 可接洽品牌视觉与数字体验项目",
+      skills: "3D Brand Visual, Product Render, Motion 3D, Scene Installation, Digital Sculpting",
+      experience: "2023 - Now｜Independent 3D Creative Artist\n独立三维创意设计师，负责品牌 3D 视觉、产品渲染、虚拟场景搭建、动态三维短片创作。\n2020 - 2023｜3D Designer｜Digital Creative Studio\n主导品牌虚拟视觉项目，完成产品三维静帧、空间场景、IP 三维形象、动态短片全流程制作，配合品牌完成线上视觉传播。\n2018 - 2020｜Junior 3D Artist\n参与商业产品渲染、视觉海报三维合成、搭建标准化渲染资产库。",
+      education: "MA Digital Arts & 3D Visualization｜Royal College of Art\nBA Digital Media Art｜China Academy of Art",
+      awards: "CGTrader Awards Selected\nSiggraph Asia Digital Art Nominee\nC4D Awards Asia Shortlist\nRender of the Year Honorable Mention",
+      clients: "Sony、Samsung、Onitsuka Tiger、Fujifilm、Dyson、Normann Copenhagen、Patagonia",
+      services: "品牌三维视觉｜产品写实渲染｜虚拟空间场景｜动态三维动画｜数字雕塑｜IP 形象｜三维视觉海报",
+      availability: "2026 Q3 可承接三维渲染、虚拟场景、动态 3D 商业项目",
       resume: "下载简历",
-      socials: "Behance / Dribbble / LinkedIn / Instagram",
+      socials: "ArtStation, Dribbble, Vimeo, Behance",
       softwareSkills: loadSoftwareSkills(),
       showSkillPercent: loadSoftwareSkillPercentSetting(),
       labels: { ...ABOUT_LABEL_DEFAULTS },
@@ -425,6 +427,7 @@ async function init() {
   bindTopbar();
   bindPreviewScrollbar();
   bindHeroControls();
+  bindBatchUpload();
   bindStyleControls();
   window.addEventListener("resize", fitCanvasFrame);
   window.addEventListener("hashchange", renderPreview);
@@ -556,14 +559,12 @@ function fitCanvasFrame() {
   const width = Math.max(260, Math.min(outerWidth, maxDesignWidth, outerHeight * ratio));
   frame.style.width = `${width}px`;
 
+  frame.style.removeProperty("height");
+  const preview = $("#sitePreview");
   const baseHeight = width / ratio;
   const scale = Math.min(outerWidth / width, outerHeight / baseHeight);
   frame.style.setProperty("--canvas-scale", `${Math.max(1, Math.min(scale, 2))}`);
-
-  const preview = $("#sitePreview");
-  if (preview) {
-    preview.style.setProperty("--preview-height", `${Math.max(preview.clientHeight, 1)}px`);
-  }
+  if (preview) preview.style.setProperty("--preview-height", `${Math.max(preview.clientHeight, 1)}px`);
 }
 
 function editorCanvasRatioKey() {
@@ -737,6 +738,8 @@ function neededText() {
 
 function renderLibraries() {
   renderTemplateCards("#heroTemplateList", HERO_TEMPLATES, state.hero.template, (id) => {
+    batchDeleteMode = false;
+    batchDeleteSelection.clear();
     state.hero.template = id;
     state.screen = "hero";
     ensureMediaCapacity(currentHeroTemplate().slots);
@@ -780,6 +783,57 @@ function renderTemplateCards(selector, items, activeId, onSelect) {
 }
 
 function templateThumbHTML(item) {
+  if (item.id === "minimal") {
+    return `<span class="template-thumb template-about-thumb thumb-about-minimal" aria-hidden="true">
+      <span class="about-thumb-kicker">ABOUT</span>
+      <span class="about-thumb-title"><i></i><i></i></span>
+      <span class="about-thumb-copy"><i></i><i></i><i></i></span>
+      <span class="about-thumb-tags"><i></i><i></i><i></i></span>
+    </span>`;
+  }
+  if (item.id === "split") {
+    return `<span class="template-thumb template-about-thumb thumb-about-split" aria-hidden="true">
+      <span class="about-thumb-photo"></span>
+      <span class="about-thumb-split-copy">
+        <i class="about-thumb-heading"></i>
+        <i class="about-thumb-line"></i>
+        <i class="about-thumb-line short"></i>
+        <i class="about-thumb-rule"></i>
+        <i class="about-thumb-line"></i>
+        <i class="about-thumb-line short"></i>
+      </span>
+    </span>`;
+  }
+  if (item.id === "timeline") {
+    return `<span class="template-thumb template-about-thumb thumb-about-timeline" aria-hidden="true">
+      <span class="about-thumb-photo"></span>
+      <span class="about-thumb-timeline-intro">
+        <i class="about-thumb-kicker"></i>
+        <i class="about-thumb-name"></i>
+        <i class="about-thumb-line"></i>
+      </span>
+      <span class="about-thumb-timeline-list"><i></i><i></i><i></i><i></i></span>
+    </span>`;
+  }
+  if (item.id === "hello-card") {
+    return `<span class="template-thumb template-about-thumb thumb-about-hello" aria-hidden="true">
+      <span class="about-thumb-photo"></span>
+      <span class="about-thumb-hello-heading"><i></i><i></i><i></i></span>
+      <span class="about-thumb-panels"><i></i><i></i><i></i><i></i></span>
+    </span>`;
+  }
+  if (item.id === "cv-sheet") {
+    return `<span class="template-thumb template-about-thumb thumb-about-cv" aria-hidden="true">
+      <span class="about-thumb-cv-copy">
+        <i class="heading"></i>
+        <i class="subheading"></i>
+        <i class="bio"></i>
+        <i class="bio short"></i>
+        <span class="about-thumb-cv-skills"><i></i><i></i><i></i></span>
+      </span>
+      <span class="about-thumb-cv-photo"></span>
+    </span>`;
+  }
   if (item.id === "orbit") {
     const cards = Array.from({ length: 10 }, (_, index) => (
       `<span class="template-orbit-mini-card template-orbit-mini-card-${index + 1}" aria-hidden="true"></span>`
@@ -869,6 +923,51 @@ function templateThumbHTML(item) {
       '<span class="thumb-image-gallery-card thumb-image-gallery-card-' + (index + 1) + '" aria-hidden="true"></span>'
     )).join("");
     return '<span class="template-thumb thumb-image-gallery thumb-image-gallery-preview" aria-hidden="true">' + cards + '</span>';
+  }
+  if (item.id === "grid") {
+    return `<span class="template-thumb thumb-works thumb-works-grid-preview" aria-hidden="true">
+      <span class="thumb-works-head"><i></i><i></i></span>
+      <span class="thumb-works-filters"><i class="is-active"></i><i></i><i></i><i></i></span>
+      <span class="thumb-works-grid-cards"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    </span>`;
+  }
+  if (item.id === "masonry") {
+    return `<span class="template-thumb thumb-works thumb-works-masonry-preview" aria-hidden="true">
+      <span class="thumb-works-masonry-card is-tall"></span>
+      <span class="thumb-works-masonry-card is-short"></span>
+      <span class="thumb-works-masonry-card is-focus"></span>
+      <span class="thumb-works-masonry-card is-short alt"></span>
+      <span class="thumb-works-masonry-card is-tall alt"></span>
+      <span class="thumb-works-masonry-caption"></span>
+    </span>`;
+  }
+  if (item.id === "list") {
+    return `<span class="template-thumb thumb-works thumb-works-list-preview" aria-hidden="true">
+      <span class="thumb-works-list-title"><i></i><i></i></span>
+      <span class="thumb-works-list-card"><i></i><b></b><em></em></span>
+    </span>`;
+  }
+  if (item.id === "slider") {
+    return `<span class="template-thumb thumb-works thumb-works-slider-preview" aria-hidden="true">
+      <span class="thumb-works-slider-head"><i></i><i></i><i></i></span>
+      <span class="thumb-works-slider-cards"><i></i><i></i><i class="is-focus"></i><i></i></span>
+      <span class="thumb-works-slider-track"><b></b></span>
+    </span>`;
+  }
+  if (item.id === "magazine") {
+    return `<span class="template-thumb thumb-works thumb-works-magazine-preview" aria-hidden="true">
+      <span class="thumb-works-magazine-card is-large"></span>
+      <span class="thumb-works-magazine-card is-small top"></span>
+      <span class="thumb-works-magazine-card is-side"></span>
+      <span class="thumb-works-magazine-rule"></span>
+    </span>`;
+  }
+  if (item.id === "image-reveal") {
+    return `<span class="template-thumb thumb-works thumb-works-reveal-preview" aria-hidden="true">
+      <span class="thumb-works-reveal-card left"><i></i><b></b></span>
+      <span class="thumb-works-reveal-card center"><i></i><b></b></span>
+      <span class="thumb-works-reveal-card right"><i></i><b></b></span>
+    </span>`;
   }
   return `<span class="template-thumb ${item.thumb || "thumb-mosaic"}"></span>`;
 }
@@ -1310,15 +1409,39 @@ function renderConfig() {
 function renderSlots() {
   const required = currentHeroTemplate().slots;
   ensureMediaCapacity(required);
+  [...batchDeleteSelection].forEach((index) => {
+    if (!state.hero.media[index] || index >= required) batchDeleteSelection.delete(index);
+  });
   $("#slotCountLabel").textContent = `${state.hero.media.slice(0, required).filter(Boolean).length} / ${required}`;
+  const batchUploadButton = $("#batchUploadBtn");
+  const batchDeleteButton = $("#batchDeleteBtn");
+  if (batchUploadButton) {
+    batchUploadButton.hidden = state.screen !== "hero";
+    batchUploadButton.disabled = state.hero.media.slice(0, required).every(Boolean);
+  }
+  if (batchDeleteButton) {
+    const uploadedCount = state.hero.media.slice(0, required).filter(Boolean).length;
+    const selectedCount = batchDeleteSelection.size;
+    batchDeleteButton.hidden = state.screen !== "hero";
+    batchDeleteButton.disabled = !batchDeleteMode && uploadedCount === 0;
+    batchDeleteButton.setAttribute("aria-pressed", String(batchDeleteMode));
+    batchDeleteButton.setAttribute(
+      "aria-label",
+      batchDeleteMode && selectedCount ? `删除已选 ${selectedCount} 张图片` : batchDeleteMode ? "退出批量删除" : "批量删除图片"
+    );
+    batchDeleteButton.title = batchDeleteMode && selectedCount ? `删除已选 ${selectedCount} 张图片` : batchDeleteMode ? "退出批量删除" : "批量删除图片";
+    batchDeleteButton.classList.toggle("is-active", batchDeleteMode);
+  }
+  document.body.classList.toggle("is-batch-delete-mode", batchDeleteMode);
   const root = $("#slotsList");
   root.innerHTML = "";
   for (let index = 0; index < required; index += 1) {
     const item = state.hero.media[index];
     const card = document.createElement("div");
-    card.className = "slot-card";
+    card.className = `slot-card ${batchDeleteMode ? "is-batch-delete-mode" : ""} ${batchDeleteSelection.has(index) ? "is-batch-selected" : ""}`;
     card.draggable = false;
     card.dataset.index = index;
+    card.setAttribute("aria-selected", String(batchDeleteSelection.has(index)));
     card.innerHTML = `
       <div class="slot-thumb ${item ? "has-media" : "is-empty"}" data-action="thumb-upload" role="button" tabindex="0" title="上传或替换图片">${item ? `<img src="${item.thumb || item.src}" alt="${escapeHTML(item.name)}"${mediaCropClassAttr(item)}${mediaCropStyleAttr(item)} />` : `<span class="slot-empty-icon slot-upload-placeholder" aria-hidden="true"><img class="slot-upload-icon" src="${svgAssetUrlCache.get(SLOT_UPLOAD_ICON_SOURCE) || SLOT_UPLOAD_ICON_SOURCE}" alt="" /></span>`}</div>
       <div class="slot-meta">
@@ -1333,6 +1456,58 @@ function renderSlots() {
     wireSlotCard(card, index);
     root.appendChild(card);
   }
+}
+
+function bindBatchUpload() {
+  const button = $("#batchUploadBtn");
+  const input = $("#batchUploadInput");
+  const deleteButton = $("#batchDeleteBtn");
+  if (!button || !input) return;
+
+  button.addEventListener("click", () => {
+    input.value = "";
+    input.click();
+  });
+  input.addEventListener("change", async () => {
+    const files = [...input.files].filter((file) => file.type.startsWith("image/"));
+    if (!files.length) return;
+    await uploadBatchImages(files);
+  });
+  deleteButton?.addEventListener("click", () => {
+    if (!batchDeleteMode) {
+      batchDeleteMode = true;
+      batchDeleteSelection.clear();
+      renderSlots();
+      return;
+    }
+    batchDeleteSelection.forEach((index) => {
+      state.hero.media[index] = null;
+    });
+    batchDeleteMode = false;
+    batchDeleteSelection.clear();
+    renderAll();
+  });
+}
+
+async function uploadBatchImages(files) {
+  const required = currentHeroTemplate().slots;
+  ensureMediaCapacity(required);
+  const targetIndexes = state.hero.media
+    .slice(0, required)
+    .map((item, index) => item ? -1 : index)
+    .filter((index) => index >= 0)
+    .slice(0, files.length);
+  if (!targetIndexes.length) return;
+
+  const mediaItems = await Promise.all(targetIndexes.map((_, index) => readImageAsync(files[index])));
+  mediaItems.forEach((media, index) => {
+    if (media) state.hero.media[targetIndexes[index]] = media;
+  });
+  if (mediaItems.some(Boolean)) renderAll();
+}
+
+function readImageAsync(file) {
+  return new Promise((resolve) => readImage(file, resolve));
 }
 
 function wireSlotCard(card, index) {
@@ -1352,6 +1527,7 @@ function wireSlotCard(card, index) {
     startSlotPointerDrag(card, index, pointerId, startX, startY, event.clientX, event.clientY);
   };
   card.addEventListener("pointerdown", (event) => {
+    if (batchDeleteMode) return;
     if (event.button !== 0 || event.target.closest("button,[data-action],input,select")) return;
     pendingPointer = {
       pointerId: event.pointerId,
@@ -1362,21 +1538,40 @@ function wireSlotCard(card, index) {
     window.addEventListener("pointerup", clearPendingPointer, { once: true });
     window.addEventListener("pointercancel", clearPendingPointer, { once: true });
   });
+  card.addEventListener("click", (event) => {
+    if (!batchDeleteMode || !state.hero.media[index] || event.target.closest("button")) return;
+    event.preventDefault();
+    batchDeleteSelection.has(index) ? batchDeleteSelection.delete(index) : batchDeleteSelection.add(index);
+    renderSlots();
+  });
   card.addEventListener("dragover", (event) => event.preventDefault());
   card.addEventListener("drop", (event) => {
+    if (batchDeleteMode) return;
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file) readImage(file, (media) => openCropModal(index, media));
   });
-  const uploadFromThumb = () => pickImage((media) => openCropModal(index, media));
+  const uploadFromThumb = (event) => {
+    if (batchDeleteMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      batchDeleteSelection.has(index) ? batchDeleteSelection.delete(index) : batchDeleteSelection.add(index);
+      renderSlots();
+      return;
+    }
+    pickImage((media) => openCropModal(index, media));
+  };
   $("[data-action='thumb-upload']", card).addEventListener("click", uploadFromThumb);
   $("[data-action='thumb-upload']", card).addEventListener("keydown", (event) => {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
-    uploadFromThumb();
+    uploadFromThumb(event);
   });
-  $("[data-action='crop']", card)?.addEventListener("click", () => openCropModal(index));
+  $("[data-action='crop']", card)?.addEventListener("click", () => {
+    if (!batchDeleteMode) openCropModal(index);
+  });
   $("[data-action='delete']", card).addEventListener("click", () => {
+    if (batchDeleteMode) return;
     state.hero.media[index] = null;
     renderAll();
   });
@@ -2946,10 +3141,11 @@ function renderTickerLoop(items, ratioValue = heroCardRatioValue("ticker-loop"))
       const model = { kind: "photo", title: "", meta: "" };
       const alt = item ? escapeHTML(item.name || `作品 ${slotIndex + 1}`) : `Slot ${slotIndex + 1}`;
       const label = `Slot ${slotIndex + 1}`;
+      const copy = item ? "" : `<span class="ticker-loop-label">${escapeHTML(label)}</span>`;
       return `<div class="ticker-loop-card ticker-card-${model.kind} ${item ? "has-media" : "is-placeholder"}">
         ${renderTickerArt(item, slotIndex, model)}
-        <span class="ticker-loop-label">${escapeHTML(label)}</span>
-        ${model.meta ? `<span class="ticker-loop-meta">${escapeHTML(model.meta).replace(/\|/g, "<br>")}</span>` : ""}
+        ${copy}
+        ${model.meta && !item ? `<span class="ticker-loop-meta">${escapeHTML(model.meta).replace(/\|/g, "<br>")}</span>` : ""}
       </div>`;
     }).join("");
     return `<div class="ticker-loop-row" style="--ticker-duration:${rowDurations[row].toFixed(2)}s;--ticker-direction:${row % 2 === 1 ? "normal" : "reverse"}">${cards}</div>`;
@@ -3047,7 +3243,8 @@ function renderAboutSection() {
     [aboutLabel("services"), state.about.services, "services"],
     [aboutLabel("availability"), state.about.availability, "availability"]
   ];
-  const portrait = `<div class="portrait about-portrait-upload ${state.about.portrait ? "has-media" : "is-empty"}" data-about-portrait-upload role="button" tabindex="0" title="上传或替换个人照片">${state.about.portrait ? `<img src="${state.about.portrait.src}" alt="${escapeHTML(state.about.name)}" />` : `<span class="portrait-upload-placeholder" aria-hidden="true"><span class="slot-empty-icon"><span class="slot-empty-sun"></span><span class="slot-empty-mountain"></span></span><span class="slot-add-label">添加图片</span></span>`}</div>`;
+  const aboutUploadIcon = svgAssetUrlCache.get(SLOT_UPLOAD_ICON_SOURCE) || SLOT_UPLOAD_ICON_SOURCE;
+  const portrait = `<div class="portrait about-portrait-upload ${state.about.portrait ? "has-media" : "is-empty"}" data-about-portrait-upload role="button" tabindex="0" title="上传或替换个人照片">${state.about.portrait ? `<img src="${state.about.portrait.src}" alt="${escapeHTML(state.about.name)}" />` : `<span class="portrait-upload-placeholder" aria-hidden="true"><span class="about-image-upload-icon"><img src="${aboutUploadIcon}" alt="" /><span class="about-image-upload-plus">+</span></span><span class="slot-add-label">添加图片</span></span>`}</div>`;
   const copy = `<div>
     <span class="hero-kicker">About</span>
     <h1${aboutInlineAttrs("name")}>${escapeHTML(state.about.name)}</h1>
@@ -3169,10 +3366,14 @@ function renderAboutSection() {
           <main class="about-cv-main">
             <section class="about-cv-block about-cv-timeline">
               <h2${aboutInlineAttrs("label:experience")}>${escapeHTML(aboutLabel("experience"))}</h2>
+              <span class="about-cv-timeline-axis" aria-hidden="true"></span>
+              <span class="about-cv-timeline-marker" aria-hidden="true"></span>
               <div${aboutInlineAttrs("experience", true)}>${formatLines(state.about.experience)}</div>
             </section>
             <section class="about-cv-block about-cv-timeline">
               <h2${aboutInlineAttrs("label:education")}>${escapeHTML(aboutLabel("education"))}</h2>
+              <span class="about-cv-timeline-axis" aria-hidden="true"></span>
+              <span class="about-cv-timeline-marker" aria-hidden="true"></span>
               <div${aboutInlineAttrs("education", true)}>${formatLines(state.about.education)}</div>
             </section>
           </main>
@@ -3625,8 +3826,9 @@ function renderWorkCover(project) {
   if (project.cover) {
     return `<img src="${project.cover.src}" alt="${escapeHTML(project.title)}"${mediaCropClassAttr(project.cover)}${mediaCropStyleAttr(project.cover)} />`;
   }
+  const uploadIcon = svgAssetUrlCache.get(SLOT_UPLOAD_ICON_SOURCE) || SLOT_UPLOAD_ICON_SOURCE;
   return `<span class="work-cover-placeholder" aria-hidden="true">
-    <span class="slot-empty-icon"><span class="slot-empty-sun"></span><span class="slot-empty-mountain"></span></span>
+    <span class="slot-empty-icon slot-upload-placeholder"><img class="slot-upload-icon" src="${uploadIcon}" alt="" /></span>
     <span class="slot-add-label">添加图片</span>
   </span>`;
 }
@@ -3666,7 +3868,8 @@ function renderContactSection() {
   const contactItems = renderContactItems(c, v);
   const contactChips = layout === "poster" ? "" : renderContactChips(c, v);
   const qr = v.qr ? renderContactQr(c) : "";
-  const posterQr = v.qr ? renderContactQr(c, "上传二维码后显示") : "";
+  // Keep the poster layout's empty QR card consistent with the classic layout.
+  const posterQr = v.qr ? renderContactQr(c) : "";
   if (layout === "poster") {
     const posterTitle = isContactCanvasEditing()
       ? `<h1${contactInlineAttrs("thanks")}>${escapeHTML(c.thanks)}</h1>`

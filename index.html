@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>RD作品集网页设计模板</title>
-    <link rel="stylesheet" href="styles.css?v=card-ratio-crop-20260728-95" />
+    <link rel="stylesheet" href="styles.css?v=contact-black-works-qr-20260729-1" />
     <style>
       .panel-section:has(#styleTarget) {
         display: none !important;
@@ -117,6 +117,18 @@
                 <p class="eyebrow">配置面板</p>
                 <h2 id="configTitle">首页设置</h2>
               </div>
+              <div class="batch-action-buttons">
+              <button class="batch-upload-button" id="batchUploadBtn" type="button" aria-label="批量上传图片" title="批量上传图片">
+                <svg class="batch-upload-icon" viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
+                  <path d="M800 768H224a32 32 0 0 1-32-32v-256a32 32 0 0 1 32-32h64a32 32 0 1 1 0 64H256v192h512v-192h-32a32 32 0 0 1 0-64h64a32 32 0 0 1 32 32v256a32 32 0 0 1-32 32z m-256-402.72v242.752a32 32 0 0 1-64 0v-242.88l-41.28 41.28a32 32 0 0 1-45.12-45.12l94.08-94.08a31.936 31.936 0 0 1 19.808-10.88 31.968 31.968 0 0 1 27.232 8.96l96 96A32 32 0 0 1 608 416a32 32 0 0 1-22.72-9.28L544 365.28z" fill="#ffffff"></path>
+                </svg>
+              </button>
+              <button class="batch-delete-button" id="batchDeleteBtn" type="button" aria-label="批量删除图片" title="批量删除图片" aria-pressed="false">
+                <svg class="batch-delete-icon" viewBox="0 0 1024 1024" aria-hidden="true" focusable="false">
+                  <path d="M781.28 851.36a58.56 58.56 0 0 1-58.56 58.56H301.28a58.72 58.72 0 0 1-58.56-58.56V230.4h538.56z m-421.6-725.92a11.84 11.84 0 0 1 12-12h281.28a11.84 11.84 0 0 1 12 12V160H359.68zM956.8 160H734.72v-34.56a81.76 81.76 0 0 0-81.76-81.76H371.68a82.08 82.08 0 0 0-81.76 81.76V160H67.2a35.36 35.36 0 0 0 0 70.56h105.12v620.8a128.96 128.96 0 0 0 128.96 128.96h421.44a128.96 128.96 0 0 0 128.96-128.96V230.4H956.8a35.2 35.2 0 0 0 35.2-35.2 34.56 34.56 0 0 0-35.2-35.2zM512 804.16a35.2 35.2 0 0 0 35.2-35.36V393.92a35.2 35.2 0 1 0-70.4 0V768.8a35.2 35.2 0 0 0 35.2 35.36m-164.32 0a35.36 35.36 0 0 0 35.36-35.36V393.92a35.36 35.36 0 1 0-70.56 0V768.8a36.32 36.32 0 0 0 35.2 35.36m328.64 0a35.36 35.36 0 0 0 35.2-35.36V393.92a35.36 35.36 0 1 0-70.56 0V768.8a35.36 35.36 0 0 0 35.36 35.36" fill="#D81E06"></path>
+                </svg>
+              </button>
+              </div>
             </div>
           </section>
 
@@ -203,6 +215,7 @@
         <button class="right-panel-trigger" id="rightPanelTrigger" type="button" aria-label="打开配置面板" aria-controls="configPanel" aria-expanded="false"></button>
       </main>
     </div>
+    <input type="file" id="batchUploadInput" accept="image/*" multiple hidden />
 
     <div class="modal is-hidden" id="qrModal" role="dialog" aria-modal="true">
       <button class="modal-close" id="closeQrModal">×</button>
@@ -2456,6 +2469,79 @@ label span,
   margin: 16px 0 10px;
 }
 
+.batch-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.batch-upload-button {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--soft);
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, opacity 180ms ease;
+}
+
+.batch-upload-button .batch-upload-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.batch-upload-button:hover,
+.batch-upload-button:focus-visible {
+  border-color: var(--accent);
+  background: rgba(183, 255, 0, 0.1);
+  outline: none;
+}
+
+.batch-upload-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.batch-delete-button {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, opacity 180ms ease;
+}
+
+.batch-delete-button .batch-delete-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.batch-delete-button:hover,
+.batch-delete-button:focus-visible,
+.batch-delete-button.is-active {
+  border-color: #d81e06;
+  background: rgba(216, 30, 6, 0.12);
+  outline: none;
+}
+
+.batch-delete-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2508,6 +2594,21 @@ label span,
 
 .slot-card.is-dragover {
   border-color: var(--accent);
+}
+
+.slot-card.is-batch-delete-mode {
+  cursor: pointer;
+}
+
+.slot-card.is-batch-delete-mode .slot-actions {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.slot-card.is-batch-selected {
+  border-color: #d81e06;
+  background: rgba(216, 30, 6, 0.13);
+  box-shadow: 0 0 0 1px rgba(216, 30, 6, 0.4), 0 8px 22px rgba(0, 0, 0, 0.22);
 }
 
 .slot-thumb,
@@ -5744,6 +5845,13 @@ label span,
   pointer-events: none;
 }
 
+.ticker-loop-card.has-media::before,
+.ticker-loop-card.has-media::after,
+.ticker-loop-card.has-media .ticker-loop-label,
+.ticker-loop-card.has-media .ticker-loop-meta {
+  display: none !important;
+}
+
 .ticker-loop:hover .ticker-loop-row,
 .ticker-loop:focus-within .ticker-loop-row {
   animation-play-state: running;
@@ -7189,18 +7297,19 @@ label span,
 }
 
 .about-cv-timeline {
+  --cv-timeline-axis-x: 8px;
   position: relative;
-  padding-left: 24px;
+  padding-left: 28px;
 }
 
-.about-cv-timeline::before {
-  content: "";
+.about-cv-timeline-axis {
   position: absolute;
-  left: 5px;
-  top: 38px;
-  bottom: 6px;
+  left: var(--cv-timeline-axis-x);
+  top: calc(clamp(20px, 2.5vw, 30px) + 18px + 0.71em);
+  bottom: 7px;
   width: 1px;
   background: color-mix(in srgb, var(--section-text, #f0ede4) 18%, transparent);
+  transform: translateX(-50%);
 }
 
 .about-cv-timeline h2 {
@@ -7219,16 +7328,17 @@ label span,
   width: 100%;
 }
 
-.about-cv-timeline div::before {
-  content: "";
+.about-cv-timeline-marker {
   position: absolute;
-  left: -23px;
-  top: 0.55em;
-  width: 7px;
-  height: 7px;
+  left: var(--cv-timeline-axis-x);
+  top: calc(clamp(20px, 2.5vw, 30px) + 18px + 0.71em);
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
   border: 2px solid var(--section-text, #f0ede4);
   border-radius: 50%;
   background: var(--section-bg, #101111);
+  transform: translate(-50%, -50%);
 }
 
 .about-preview .about-cv-sheet [data-about-inline] {
@@ -7237,8 +7347,8 @@ label span,
 
 .about-preview .about-cv-sheet [data-about-inline]:hover,
 .about-preview .about-cv-sheet [data-about-inline]:focus {
-  outline-color: color-mix(in srgb, var(--accent, #c8a46a) 62%, transparent);
-  background: rgba(200, 164, 106, 0.18);
+  outline-color: rgba(27, 30, 27, 0.42);
+  background: rgba(27, 30, 27, 0.1);
 }
 
 .site-preview.preview-bg-ivory .about-cv-sheet,
@@ -7294,15 +7404,135 @@ label span,
   color: #f5efe4;
 }
 
-.site-preview.preview-bg-ivory .about-cv-timeline::before,
-.published-site.preview-bg-ivory .about-cv-timeline::before {
+.site-preview.preview-bg-ivory .about-cv-timeline-axis,
+.published-site.preview-bg-ivory .about-cv-timeline-axis {
   background: rgba(24, 25, 23, 0.18);
 }
 
-.site-preview.preview-bg-ivory .about-cv-timeline div::before,
-.published-site.preview-bg-ivory .about-cv-timeline div::before {
+.site-preview.preview-bg-ivory .about-cv-timeline-marker,
+.published-site.preview-bg-ivory .about-cv-timeline-marker {
   border-color: #181917;
   background: #efe9dd;
+}
+
+/* Ivory resume: match the homepage's compact card language and preserve contrast. */
+.site-preview.preview-bg-ivory .about-cv-skill-grid,
+.published-site.preview-bg-ivory .about-cv-skill-grid {
+  grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  gap: 14px;
+}
+
+.site-preview.preview-bg-ivory .software-skill-card,
+.published-site.preview-bg-ivory .software-skill-card {
+  min-height: 104px;
+  padding: 13px 11px 11px;
+  border-color: rgba(24, 25, 23, 0.18);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(255, 255, 252, 0.94), rgba(232, 235, 228, 0.82));
+  color: #181917;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.9), 0 8px 18px rgba(24, 25, 23, 0.08);
+}
+
+.site-preview.preview-bg-ivory .software-skill-card:hover,
+.published-site.preview-bg-ivory .software-skill-card:hover {
+  border-color: rgba(24, 25, 23, 0.42);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.94), 0 12px 24px rgba(24, 25, 23, 0.14);
+}
+
+.site-preview.preview-bg-ivory .about-cv-skill-grid .software-skill-icon,
+.published-site.preview-bg-ivory .about-cv-skill-grid .software-skill-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #181917;
+  color: #f8faef;
+}
+
+.site-preview.preview-bg-ivory .software-skill-card strong,
+.published-site.preview-bg-ivory .software-skill-card strong {
+  color: #171916;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.site-preview.preview-bg-ivory .software-skill-card small,
+.published-site.preview-bg-ivory .software-skill-card small {
+  color: rgba(24, 25, 23, 0.74);
+  font-weight: 700;
+}
+
+.site-preview.preview-bg-ivory .software-skill-bar,
+.published-site.preview-bg-ivory .software-skill-bar {
+  height: 5px;
+  background: rgba(24, 25, 23, 0.13);
+}
+
+.site-preview.preview-bg-ivory .software-skill-bar span,
+.published-site.preview-bg-ivory .software-skill-bar span {
+  background: #b7ff00;
+  box-shadow: 0 1px 3px rgba(75, 105, 0, 0.18);
+}
+
+.site-preview.preview-bg-ivory .about-cv-skill-edit,
+.published-site.preview-bg-ivory .about-cv-skill-edit {
+  border-color: #1b1e1b;
+  background: #1b1e1b;
+  color: #f7f9f0;
+  box-shadow: 0 5px 12px rgba(24, 25, 23, 0.14);
+}
+
+.site-preview.preview-bg-ivory .about-cv-skill-edit:hover,
+.site-preview.preview-bg-ivory .about-cv-skill-edit:focus-visible,
+.published-site.preview-bg-ivory .about-cv-skill-edit:hover,
+.published-site.preview-bg-ivory .about-cv-skill-edit:focus-visible {
+  border-color: #30352e;
+  background: #30352e;
+  outline: none;
+}
+
+.site-preview.preview-bg-ivory .about-cv-photo .portrait,
+.published-site.preview-bg-ivory .about-cv-photo .portrait {
+  border-color: rgba(24, 25, 23, 0.24);
+  background:
+    linear-gradient(rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(145deg, #f3f3f3, #d8d8d8);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.9), 0 10px 20px rgba(24, 25, 23, 0.08);
+}
+
+.site-preview.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder,
+.published-site.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder,
+.site-preview.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-add-label,
+.published-site.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-add-label {
+  color: rgba(24, 25, 23, 0.78);
+  font-weight: 700;
+}
+
+.site-preview.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-icon,
+.published-site.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-icon,
+.site-preview.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-sun,
+.published-site.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-sun {
+  border-color: #181917;
+}
+
+.site-preview.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-mountain::before,
+.site-preview.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-mountain::after,
+.published-site.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-mountain::before,
+.published-site.preview-bg-ivory .about-cv-photo .portrait-upload-placeholder .slot-empty-mountain::after {
+  border-color: #181917;
+}
+
+/* Keep the ivory skill display open: the icon, label, and meter carry the grouping. */
+.site-preview.preview-bg-ivory .software-skill-card,
+.published-site.preview-bg-ivory .software-skill-card,
+.site-preview.preview-bg-ivory .software-skill-card:hover,
+.published-site.preview-bg-ivory .software-skill-card:hover {
+  min-height: 92px;
+  padding: 4px 8px 6px;
+  border-color: transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .about-split .about-grid {
@@ -7800,6 +8030,42 @@ label span,
   right: 0;
   bottom: 13px;
   color: rgba(238, 232, 220, 0.78);
+}
+
+.about-image-upload-icon {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-2px) scale(1.2);
+  transform-origin: center;
+}
+
+.about-image-upload-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.about-image-upload-plus {
+  position: absolute;
+  right: -8px;
+  bottom: -7px;
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(238, 232, 220, 0.28);
+  border-radius: 50%;
+  color: #11110f;
+  background: var(--accent, #b7ff00);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.46);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  padding-bottom: 1px;
 }
 
 .tags,
@@ -8369,8 +8635,8 @@ label span,
   bottom: 0;
   z-index: 2;
   padding: 48px 14px 14px;
-  color: var(--section-text, #f0ede4);
-  background: linear-gradient(180deg, transparent, rgba(6, 7, 7, 0.72));
+  color: #11120f;
+  background: linear-gradient(180deg, transparent, rgba(183, 255, 0, 0.9));
   opacity: 0;
   transform: translateY(10px);
   transition: opacity 220ms ease, transform 220ms ease;
@@ -8387,6 +8653,11 @@ label span,
 .layout-masonry .work-info h3 {
   max-width: 320px;
   white-space: normal;
+}
+
+.layout-masonry .work-info small,
+.layout-image-reveal .work-info small {
+  color: rgba(17, 18, 15, 0.68);
 }
 
 .layout-masonry .work-detail {
@@ -8527,15 +8798,15 @@ label span,
   box-sizing: border-box;
   overflow: hidden;
   border-radius: 2px 2px 10px 10px;
-  color: #f0ede4;
-  background: rgba(7, 8, 8, 0.88);
+  color: #11120f;
+  background: rgba(183, 255, 0, 0.9);
   opacity: 1;
   transform: none;
   pointer-events: auto;
 }
 
 .layout-image-reveal .work-info h3 {
-  color: #f0ede4;
+  color: #11120f;
   font-size: 13px;
   line-height: 1.15;
   margin-top: 2px;
@@ -9591,6 +9862,12 @@ label span,
   font-size: 13px;
 }
 
+.skill-toggle > span {
+  display: inline;
+  margin: 0;
+  white-space: nowrap;
+}
+
 .skill-editor-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
@@ -10322,10 +10599,309 @@ html.image-export *,
   }
 }
 
+/* Ivory minimal: keep the editable role and bio legible against the light canvas. */
+.site-preview.preview-bg-ivory .about-minimal .preview-inner > div:first-child > p,
+.published-site.preview-bg-ivory .about-minimal .preview-inner > div:first-child > p {
+  color: rgba(24, 25, 23, 0.78);
+}
+
+.site-preview.preview-bg-ivory .about-minimal .preview-inner > div:first-child > p strong,
+.published-site.preview-bg-ivory .about-minimal .preview-inner > div:first-child > p strong {
+  color: #181917;
+  font-weight: 750;
+}
+
+.site-preview.preview-bg-ivory .about-minimal .hero-kicker,
+.published-site.preview-bg-ivory .about-minimal .hero-kicker {
+  color: #b7ff00;
+  border-bottom-color: #b7ff00;
+}
+
+.site-preview.preview-bg-ivory .about-timeline .hero-kicker,
+.published-site.preview-bg-ivory .about-timeline .hero-kicker {
+  color: #b7ff00;
+  border-bottom-color: #b7ff00;
+}
+
+.site-preview.preview-bg-ivory .about-minimal [data-about-inline]:hover,
+.site-preview.preview-bg-ivory .about-minimal [data-about-inline]:focus,
+.published-site.preview-bg-ivory .about-minimal [data-about-inline]:hover,
+.published-site.preview-bg-ivory .about-minimal [data-about-inline]:focus {
+  outline: 1px solid rgba(27, 30, 27, 0.42) !important;
+  background: rgba(27, 30, 27, 0.1) !important;
+}
+
+/* Ivory split layout: use the same neutral contrast and edit treatment as the CV sheet. */
+.site-preview.preview-bg-ivory .about-split .about-resume-board,
+.published-site.preview-bg-ivory .about-split .about-resume-board {
+  align-items: start;
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-side,
+.published-site.preview-bg-ivory .about-split .about-resume-side {
+  align-content: start;
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-title span,
+.site-preview.preview-bg-ivory .about-split .about-resume-name span,
+.site-preview.preview-bg-ivory .about-split .about-resume-section header span,
+.site-preview.preview-bg-ivory .about-split .about-resume-fields span,
+.published-site.preview-bg-ivory .about-split .about-resume-title span,
+.published-site.preview-bg-ivory .about-split .about-resume-name span,
+.published-site.preview-bg-ivory .about-split .about-resume-section header span,
+.published-site.preview-bg-ivory .about-split .about-resume-fields span {
+  color: rgba(24, 25, 23, 0.62);
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-title strong,
+.site-preview.preview-bg-ivory .about-split .about-resume-name strong,
+.site-preview.preview-bg-ivory .about-split .about-resume-section header strong,
+.published-site.preview-bg-ivory .about-split .about-resume-title strong,
+.published-site.preview-bg-ivory .about-split .about-resume-name strong,
+.published-site.preview-bg-ivory .about-split .about-resume-section header strong {
+  color: #111210;
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-intro,
+.site-preview.preview-bg-ivory .about-split .about-resume-fields p,
+.site-preview.preview-bg-ivory .about-split .about-resume-lines,
+.site-preview.preview-bg-ivory .about-split .about-resume-timeline,
+.published-site.preview-bg-ivory .about-split .about-resume-intro,
+.published-site.preview-bg-ivory .about-split .about-resume-fields p,
+.published-site.preview-bg-ivory .about-split .about-resume-lines,
+.published-site.preview-bg-ivory .about-split .about-resume-timeline {
+  color: rgba(24, 25, 23, 0.78);
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-name,
+.site-preview.preview-bg-ivory .about-split .about-resume-section,
+.published-site.preview-bg-ivory .about-split .about-resume-name,
+.published-site.preview-bg-ivory .about-split .about-resume-section {
+  border-bottom-color: rgba(24, 25, 23, 0.18);
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-work::before,
+.published-site.preview-bg-ivory .about-split .about-resume-work::before {
+  background: rgba(24, 25, 23, 0.18);
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-timeline::before,
+.site-preview.preview-bg-ivory .about-split .about-resume-timeline::after,
+.published-site.preview-bg-ivory .about-split .about-resume-timeline::before,
+.published-site.preview-bg-ivory .about-split .about-resume-timeline::after {
+  background: #181917;
+}
+
+.site-preview.preview-bg-ivory .about-split .about-resume-side .portrait,
+.published-site.preview-bg-ivory .about-split .about-resume-side .portrait {
+  justify-self: center;
+  border-color: rgba(24, 25, 23, 0.24);
+  background:
+    linear-gradient(rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(145deg, #f3f3f3, #d8d8d8);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.9), 0 10px 20px rgba(24, 25, 23, 0.08);
+}
+
+.site-preview.preview-bg-ivory .about-split .portrait-upload-placeholder,
+.site-preview.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-add-label,
+.published-site.preview-bg-ivory .about-split .portrait-upload-placeholder,
+.published-site.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-add-label {
+  color: rgba(24, 25, 23, 0.78);
+  font-weight: 700;
+}
+
+.site-preview.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-icon,
+.site-preview.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-sun,
+.published-site.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-icon,
+.published-site.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-sun {
+  border-color: #181917;
+}
+
+.site-preview.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-mountain::before,
+.site-preview.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-mountain::after,
+.published-site.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-mountain::before,
+.published-site.preview-bg-ivory .about-split .portrait-upload-placeholder .slot-empty-mountain::after {
+  border-color: #181917;
+}
+
+.site-preview.preview-bg-ivory .about-split [data-about-inline]:hover,
+.site-preview.preview-bg-ivory .about-split [data-about-inline]:focus,
+.published-site.preview-bg-ivory .about-split [data-about-inline]:hover,
+.published-site.preview-bg-ivory .about-split [data-about-inline]:focus {
+  outline: 1px solid rgba(27, 30, 27, 0.42) !important;
+  background: rgba(27, 30, 27, 0.1) !important;
+}
+
+.site-preview.preview-bg-ivory .about-preview .about-image-upload-icon img,
+.published-site.preview-bg-ivory .about-preview .about-image-upload-icon img {
+  filter: brightness(0);
+}
+
+/* Ivory timeline and poster layouts: share the CV sheet's neutral, legible treatment. */
+.site-preview.preview-bg-ivory .about-preview .portrait-upload-placeholder,
+.site-preview.preview-bg-ivory .about-preview .portrait-upload-placeholder .slot-add-label,
+.published-site.preview-bg-ivory .about-preview .portrait-upload-placeholder,
+.published-site.preview-bg-ivory .about-preview .portrait-upload-placeholder .slot-add-label {
+  color: rgba(24, 25, 23, 0.78);
+  font-weight: 700;
+}
+
+.site-preview.preview-bg-ivory .about-timeline .about-timeline-photo .portrait.is-empty,
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-photo .portrait.is-empty,
+.published-site.preview-bg-ivory .about-timeline .about-timeline-photo .portrait.is-empty,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-photo .portrait.is-empty {
+  border-color: rgba(24, 25, 23, 0.24);
+  background:
+    linear-gradient(rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(145deg, #f3f3f3, #d8d8d8);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.9), 0 10px 20px rgba(24, 25, 23, 0.08);
+}
+
+.site-preview.preview-bg-ivory .about-timeline .timeline-item,
+.published-site.preview-bg-ivory .about-timeline .timeline-item {
+  border-color: rgba(24, 25, 23, 0.18);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+.site-preview.preview-bg-ivory .about-timeline .timeline-item strong,
+.published-site.preview-bg-ivory .about-timeline .timeline-item strong {
+  color: #111210;
+}
+
+.site-preview.preview-bg-ivory .about-timeline .timeline-item span,
+.site-preview.preview-bg-ivory .about-timeline .about-timeline-copy p,
+.published-site.preview-bg-ivory .about-timeline .timeline-item span,
+.published-site.preview-bg-ivory .about-timeline .about-timeline-copy p {
+  color: rgba(24, 25, 23, 0.78);
+}
+
+.site-preview.preview-bg-ivory .about-timeline .about-timeline-copy p strong,
+.published-site.preview-bg-ivory .about-timeline .about-timeline-copy p strong {
+  color: #181917;
+}
+
+.site-preview.preview-bg-ivory .about-timeline .tag,
+.published-site.preview-bg-ivory .about-timeline .tag {
+  border-color: rgba(24, 25, 23, 0.28);
+  color: #181917;
+  background: transparent;
+}
+
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-role,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-role {
+  color: #181917;
+}
+
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-intro h1,
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-panel strong,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-intro h1,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-panel strong {
+  color: #111210;
+}
+
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-bio,
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-panel span,
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-skill-list,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-bio,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-panel span,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-skill-list {
+  color: rgba(24, 25, 23, 0.78);
+}
+
+.site-preview.preview-bg-ivory .about-hello-card .about-hello-panel,
+.published-site.preview-bg-ivory .about-hello-card .about-hello-panel {
+  border-color: rgba(24, 25, 23, 0.18);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+.site-preview.preview-bg-ivory .about-timeline [data-about-inline]:hover,
+.site-preview.preview-bg-ivory .about-timeline [data-about-inline]:focus,
+.site-preview.preview-bg-ivory .about-hello-card [data-about-inline]:hover,
+.site-preview.preview-bg-ivory .about-hello-card [data-about-inline]:focus,
+.published-site.preview-bg-ivory .about-timeline [data-about-inline]:hover,
+.published-site.preview-bg-ivory .about-timeline [data-about-inline]:focus,
+.published-site.preview-bg-ivory .about-hello-card [data-about-inline]:hover,
+.published-site.preview-bg-ivory .about-hello-card [data-about-inline]:focus {
+  outline: 1px solid rgba(27, 30, 27, 0.42) !important;
+  background: rgba(27, 30, 27, 0.1) !important;
+}
+
+/* Ivory works: match About's restrained cards and neutral editing treatment. */
+.site-preview.preview-bg-ivory .works-preview .work-card,
+.published-site.preview-bg-ivory .works-preview .work-card {
+  border-color: rgba(24, 25, 23, 0.18);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+.site-preview.preview-bg-ivory .works-preview .work-card:hover,
+.published-site.preview-bg-ivory .works-preview .work-card:hover {
+  border-color: rgba(24, 25, 23, 0.42);
+  box-shadow: none;
+}
+
+.site-preview.preview-bg-ivory .works-preview .work-cover,
+.published-site.preview-bg-ivory .works-preview .work-cover {
+  border-color: rgba(24, 25, 23, 0.18);
+  background:
+    linear-gradient(rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(145deg, #f3f3f3, #d8d8d8);
+  color: rgba(24, 25, 23, 0.62);
+}
+
+.site-preview.preview-bg-ivory .works-preview .work-cover-placeholder,
+.published-site.preview-bg-ivory .works-preview .work-cover-placeholder {
+  background:
+    linear-gradient(rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 25, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(145deg, #f3f3f3, #d8d8d8);
+  background-size: 22px 22px, 22px 22px, 100% 100%;
+}
+
+.site-preview.preview-bg-ivory .works-preview .work-cover-placeholder .slot-upload-icon,
+.published-site.preview-bg-ivory .works-preview .work-cover-placeholder .slot-upload-icon {
+  filter: brightness(0);
+}
+
+.site-preview.preview-bg-ivory .works-preview .work-cover-placeholder .slot-add-label,
+.published-site.preview-bg-ivory .works-preview .work-cover-placeholder .slot-add-label {
+  color: rgba(24, 25, 23, 0.68);
+}
+
+.site-preview.preview-bg-ivory .works-preview .work-info small,
+.published-site.preview-bg-ivory .works-preview .work-info small {
+  color: rgba(24, 25, 23, 0.62);
+}
+
+.site-preview.preview-bg-ivory .works-preview .work-detail,
+.published-site.preview-bg-ivory .works-preview .work-detail {
+  color: rgba(24, 25, 23, 0.78);
+}
+
+.site-preview.preview-bg-ivory .works-preview [data-works-inline]:hover,
+.site-preview.preview-bg-ivory .works-preview [data-works-inline]:focus,
+.site-preview.preview-bg-ivory .works-preview [data-works-filter-inline]:hover,
+.site-preview.preview-bg-ivory .works-preview [data-works-filter-inline]:focus,
+.published-site.preview-bg-ivory .works-preview [data-works-inline]:hover,
+.published-site.preview-bg-ivory .works-preview [data-works-inline]:focus,
+.published-site.preview-bg-ivory .works-preview [data-works-filter-inline]:hover,
+.published-site.preview-bg-ivory .works-preview [data-works-filter-inline]:focus {
+  outline: 1px solid rgba(27, 30, 27, 0.42) !important;
+  background: rgba(27, 30, 27, 0.1) !important;
+}
+
 
 </script>
 
     <script src="html2canvas.min.js"></script>
-    <script src="app.js?v=card-ratio-crop-20260728-95"></script>
+    <script src="app.js?v=contact-ivory-poster-qr-20260729-1"></script>
   </body>
 </html>
