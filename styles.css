@@ -13768,3 +13768,8 @@ label span {
   opacity: 0.72 !important;
 }
 
+/* The signature contact layout is intentionally open, without a framed board. */
+.contact-signature-board {
+  border: 0 !important;
+}
+
